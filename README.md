@@ -1,5 +1,8 @@
 # My Task - Application de Gestion de Tâches
 
+![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)
+![Status](https://img.shields.io/badge/status-live-green.svg)
+
 Bienvenue sur **My Task**, une application de gestion de tâches simple, élégante et puissante, conçue pour vous aider à organiser votre quotidien avec efficacité.
 
 ## Fonctionnalités Principales
