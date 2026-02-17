@@ -246,7 +246,7 @@ export default function TodoApp() {
         <div className="w-[98%] mx-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 transition-all duration-300 h-[85vh] flex flex-col my-4">
             <div className="p-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Mes Tâches</h1>
+                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
                     <div className="flex gap-2 items-center">
                         <div className="flex items-center mr-1">
                             <Switch checked={theme === 'dark'} onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')} className="h-8 w-14 bg-neutral-200 dark:bg-neutral-800 border overflow-hidden border-neutral-200 dark:border-neutral-700 relative flex items-center p-1 cursor-pointer rounded-full [&[data-state=checked]]:justify-end [&[data-state=unchecked]]:justify-start">
