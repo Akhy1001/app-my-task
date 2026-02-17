@@ -1,5 +1,8 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Check, Pencil, Flag, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
+import { Flag } from "@/components/animate-ui/icons/flag";
+import { ChevronLeft } from "@/components/animate-ui/icons/chevron-left";
+import { ChevronRight } from "@/components/animate-ui/icons/chevron-right";
 import { Trash2 } from "@/components/animate-ui/icons/trash2";
 import { MessageSquare } from "@/components/animate-ui/icons/message-square";
 import { Send } from "@/components/animate-ui/icons/send";
@@ -12,12 +15,18 @@ import { memo, useRef, useEffect, useState } from "react";
 
 type Priority = "low" | "medium" | "high";
 
+export interface Comment {
+    id: string;
+    text: string;
+    isCompleted: boolean;
+}
+
 export interface Todo {
     id: string;
     text: string;
     completed: boolean;
     date?: string;
-    comments?: string[];
+    comments?: Comment[];
     priority?: Priority;
     horizon: 'short' | 'long';
 }
@@ -28,6 +37,7 @@ interface TodoItemProps {
     deleteTodo: (id: string) => void;
     addComment: (id: string, comment: string) => void;
     toggleComments: (id: string) => void;
+    toggleComment: (todoId: string, commentId: string) => void;
     isExpanded: boolean;
     editingComment: { todoId: string; index: number } | null;
     startEditingComment: (todoId: string, index: number, text: string) => void;
@@ -54,6 +64,7 @@ const TodoItem = memo(function TodoItem({
     deleteTodo,
     addComment,
     toggleComments,
+    toggleComment,
     isExpanded,
     editingComment,
     startEditingComment,
@@ -61,62 +72,17 @@ const TodoItem = memo(function TodoItem({
     cancelEditComment,
     onMoveToHorizon,
 }: TodoItemProps) {
-    const [commentInput, setCommentInput] = useState("");
-    const [editCommentText, setEditCommentText] = useState("");
-
-    // Reset local state when edit mode changes
-    useEffect(() => {
-        if (editingComment?.todoId === todo.id) {
-            // Logic handled by parent or local state depending on design.
-            // In previous design, editCommentText was in parent.
-            // To keep it simple and performant, we might want to keep some state local or pass it down.
-            // The implementation plan said "Move item-specific state... to this component where possible"
-            // But existing callbacks rely on parent state.
-            // Let's adapt.
-        }
-    }, [editingComment, todo.id]);
-
-    // Actually, for optimal performance and cleaner Architecture, handling input state locally for comments is better, 
-    // but the edit state involves UI coordination (only one editing at a time).
-    // Let's re-use the passed props for now to minimize refactor risk, 
-    // but we need to handle the input values.
-
-    // WAIT. Filtering `editCommentText` from parent props might be better to avoid prop drilling 
-    // if we want full memoization benefits.
-    // However, the prompt asked to "Extract and memoize".
-
-    // Let's keep `editCommentText` local to the editing mode if possible?
-    // The previous implementation had `editCommentText` in `TodoApp`. 
-    // If I move it here, I need to make sure `saveEditComment` receives the new text.
-
-    // Let's use local state for the input fields to avoid re-rendering the parent on every keystroke.
-
     const [localCommentInput, setLocalCommentInput] = useState("");
     const [localEditText, setLocalEditText] = useState("");
 
+    const hasIncompleteComments = todo.comments?.some(c => !c.isCompleted) ?? false;
+    const isMainCheckboxDisabled = hasIncompleteComments && !todo.completed;
+
     useEffect(() => {
         if (editingComment?.todoId === todo.id) {
-            // We need the text of the comment being edited. 
-            // But we don't have it easily here unless passed or found.
-            // Let's trust the parent triggers the startEditing with text, 
-            // but here we need to Initialize localEditText.
-            // ACTUALLY, simpler approach: Parent handles coordination, but we can pass `currentEditText` prop.
+            // Logic handled by parent or local state depending on design.
         }
     }, [editingComment, todo.id]);
-
-    // To properly decouple:
-    // 1. `toggleComments`: Expand/Collapse is UI state, could be local if only one item expanded isn't a strict requirement (it is in the code: `expandedTodoId`).
-    // 2. `addComment`: Input is local.
-    // 3. `editComment`: Input is local.
-
-    // Let's refine the props.
-
-    // ... Rethinking to match existing logic perfectly first, then optimize.
-    // Existing logic has `editCommentText` in parent.
-    // I should probably accept `currentEditText` if this item is being edited.
-
-    // BUT, to optimize, typing in an input shouldn't re-render the list. 
-    // So distinct local state for inputs is crucial.
 
     const handleAddComment = () => {
         if (localCommentInput.trim()) {
@@ -145,14 +111,18 @@ const TodoItem = memo(function TodoItem({
             )}
         >
             <div className="flex items-center gap-3 p-3">
-                <Checkbox
-                    checked={todo.completed}
-                    onCheckedChange={() => toggleTodo(todo.id)}
-                    className={cn(
-                        "transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
-                        todo.completed ? "!border-green-500" : "border-neutral-300 dark:border-neutral-600"
-                    )}
-                />
+                <div title={isMainCheckboxDisabled ? "Validez toutes les sous-tâches d'abord" : undefined}>
+                    <Checkbox
+                        checked={todo.completed}
+                        onCheckedChange={() => !isMainCheckboxDisabled && toggleTodo(todo.id)}
+                        disabled={isMainCheckboxDisabled}
+                        className={cn(
+                            "transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
+                            todo.completed ? "!border-green-500" : "border-neutral-300 dark:border-neutral-600",
+                            isMainCheckboxDisabled && "opacity-50 cursor-not-allowed"
+                        )}
+                    />
+                </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
@@ -193,9 +163,9 @@ const TodoItem = memo(function TodoItem({
                         title={todo.horizon === 'long' ? "Passer à court terme" : "Passer à long terme"}
                     >
                         {todo.horizon === 'long' ? (
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft animateOnHover className="h-4 w-4" />
                         ) : (
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight animateOnHover className="h-4 w-4" />
                         )}
                     </button>
                     <button
@@ -205,7 +175,12 @@ const TodoItem = memo(function TodoItem({
                             isExpanded ? "text-blue-500 bg-blue-50 dark:bg-blue-900/20" : "text-neutral-400 hover:text-blue-500"
                         )}
                     >
-                        <MessageSquare animateOnHover className="h-4 w-4" />
+                        <div className="relative">
+                            <MessageSquare animateOnHover className="h-4 w-4" />
+                            {hasIncompleteComments && !todo.completed && (
+                                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-orange-500" />
+                            )}
+                        </div>
                     </button>
                     <button
                         onClick={() => deleteTodo(todo.id)}
@@ -228,7 +203,15 @@ const TodoItem = memo(function TodoItem({
                             {todo.comments && todo.comments.length > 0 ? (
                                 <ul className="space-y-2">
                                     {todo.comments.map((comment, index) => (
-                                        <li key={index} className="text-sm text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800 shadow-sm group/comment flex justify-between items-start gap-2">
+                                        <li key={comment.id} className="text-sm text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800 shadow-sm group/comment flex items-start gap-3">
+                                            <Checkbox
+                                                checked={comment.isCompleted}
+                                                onCheckedChange={() => toggleComment(todo.id, comment.id)}
+                                                className={cn(
+                                                    "mt-0.5 transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
+                                                    comment.isCompleted ? "!border-green-500" : "border-neutral-300 dark:border-neutral-600"
+                                                )}
+                                            />
                                             {editingComment?.todoId === todo.id && editingComment?.index === index ? (
                                                 <div className="flex-1 flex flex-col gap-2">
                                                     <Input
@@ -248,9 +231,9 @@ const TodoItem = memo(function TodoItem({
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <span className="flex-1 break-words">{comment}</span>
+                                                    <span className={cn("flex-1 break-words transition-all", comment.isCompleted && "text-neutral-400 line-through decoration-neutral-400")}>{comment.text}</span>
                                                     <button
-                                                        onClick={() => handleStartEditing(index, comment)}
+                                                        onClick={() => handleStartEditing(index, comment.text)}
                                                         className="opacity-100 text-neutral-400 hover:text-blue-500 transition-opacity p-1"
                                                     >
                                                         <Pencil className="h-3 w-3" />
@@ -261,14 +244,14 @@ const TodoItem = memo(function TodoItem({
                                     ))}
                                 </ul>
                             ) : (
-                                <p className="text-xs text-neutral-400 italic">Aucun commentaire pour le moment</p>
+                                <p className="text-xs text-neutral-400 italic">Aucune sous-tâche pour le moment</p>
                             )}
 
                             <div className="flex gap-2">
                                 <Input
                                     value={localCommentInput}
                                     onChange={(e) => setLocalCommentInput(e.target.value)}
-                                    placeholder="Ajouter un commentaire..."
+                                    placeholder="Ajouter une sous-tâche..."
                                     className="flex-1 text-sm h-9"
                                     onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
                                     autoFocus={!editingComment}

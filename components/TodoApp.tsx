@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "next-themes";
 import { Switch, SwitchThumb, SwitchIcon } from "@/components/animate-ui/primitives/radix/switch";
-import { Check, Flag, Moon, Sun } from "lucide-react";
+import { Check, Moon, Sun } from "lucide-react";
+import { Flag } from "@/components/animate-ui/icons/flag";
 import { Clock } from "@/components/animate-ui/icons/clock";
 import { Plus } from "@/components/animate-ui/icons/plus";
 import { Calendar } from "@/components/animate-ui/icons/calendar";
@@ -59,7 +60,17 @@ export default function TodoApp() {
         if (savedTodos) {
             try {
                 const parsed = JSON.parse(savedTodos);
-                setTodos(parsed.map((t: any) => ({ ...t, horizon: t.horizon || 'short' })));
+                // Migration logic: Convert string[] comments to Comment[]
+                const migratedTodos = parsed.map((t: any) => ({
+                    ...t,
+                    horizon: t.horizon || 'short',
+                    comments: t.comments?.map((c: any) =>
+                        typeof c === 'string'
+                            ? { id: crypto.randomUUID(), text: c, isCompleted: false }
+                            : c
+                    ) || []
+                }));
+                setTodos(migratedTodos);
             } catch (error) {
                 console.error("Failed to parse todos from localStorage:", error);
             }
@@ -94,9 +105,17 @@ export default function TodoApp() {
 
     const toggleTodo = useCallback((id: string) => {
         setTodos((prev) =>
-            prev.map((todo) =>
-                todo.id === id ? { ...todo, completed: !todo.completed } : todo
-            )
+            prev.map((todo) => {
+                if (todo.id === id) {
+                    // Prevent toggling if there are incomplete comments
+                    const hasIncompleteComments = todo.comments?.some(c => !c.isCompleted);
+                    if (hasIncompleteComments && !todo.completed) {
+                        return todo;
+                    }
+                    return { ...todo, completed: !todo.completed };
+                }
+                return todo;
+            })
         );
     }, []);
 
@@ -105,13 +124,35 @@ export default function TodoApp() {
         setExpandedTodoId((prev) => (prev === id ? null : prev));
     }, []);
 
-    const addComment = useCallback((id: string, comment: string) => {
+    const addComment = useCallback((id: string, commentText: string) => {
         setTodos((prev) =>
             prev.map((todo) =>
                 todo.id === id
-                    ? { ...todo, comments: [...(todo.comments || []), comment] }
+                    ? {
+                        ...todo,
+                        comments: [
+                            ...(todo.comments || []),
+                            { id: crypto.randomUUID(), text: commentText, isCompleted: false }
+                        ]
+                    }
                     : todo
             )
+        );
+    }, []);
+
+    const toggleComment = useCallback((todoId: string, commentId: string) => {
+        setTodos((prev) =>
+            prev.map((todo) => {
+                if (todo.id === todoId) {
+                    return {
+                        ...todo,
+                        comments: todo.comments?.map(c =>
+                            c.id === commentId ? { ...c, isCompleted: !c.isCompleted } : c
+                        )
+                    };
+                }
+                return todo;
+            })
         );
     }, []);
 
@@ -123,7 +164,14 @@ export default function TodoApp() {
         setTodos((prev) => prev.map(todo => {
             if (todo.id === todoId) {
                 const newComments = [...(todo.comments || [])];
-                newComments[index] = text;
+                // Handle both new Comment objects and legacy strings just in case, though migration should handle it
+                const comment = newComments[index];
+                if (typeof comment === 'object') {
+                    newComments[index] = { ...comment, text };
+                } else {
+                    // Fallback for strict typing if types get confused, though logic implies object
+                    newComments[index] = { id: crypto.randomUUID(), text, isCompleted: false };
+                }
                 return { ...todo, comments: newComments };
             }
             return todo;
@@ -327,7 +375,7 @@ export default function TodoApp() {
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button variant="outline" size="icon" className={cn("transition-colors", priorityValue ? PRIORITY_COLORS[priorityValue] : "text-neutral-400")}>
-                                    <Flag size={20} className={cn(priorityValue && "fill-current")} />
+                                    <Flag animateOnHover size={20} className={cn(priorityValue && "fill-current")} />
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-2" align="start">
@@ -418,6 +466,7 @@ export default function TodoApp() {
                                             deleteTodo={deleteTodo}
                                             addComment={addComment}
                                             toggleComments={toggleComments}
+                                            toggleComment={toggleComment}
                                             isExpanded={expandedTodoId === todo.id}
                                             editingComment={editingComment}
                                             startEditingComment={startEditingComment}
@@ -454,6 +503,7 @@ export default function TodoApp() {
                                             deleteTodo={deleteTodo}
                                             addComment={addComment}
                                             toggleComments={toggleComments}
+                                            toggleComment={toggleComment}
                                             isExpanded={expandedTodoId === todo.id}
                                             editingComment={editingComment}
                                             startEditingComment={startEditingComment}

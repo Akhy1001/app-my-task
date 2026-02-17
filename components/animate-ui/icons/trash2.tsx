@@ -18,12 +18,12 @@ const animations = {
             initial: {
                 rotate: 0,
                 originX: "50%",
-                originY: "50%",
+                originY: "25%",
                 y: 0,
             },
             animate: {
                 rotate: [-3, 3, -2, 2, 0],
-                y: -3,
+                y: -2,
                 transition: {
                     duration: 0.5,
                     ease: 'easeInOut',
@@ -66,13 +66,16 @@ function IconComponent({ size, ...props }: Trash2Props) {
             strokeLinejoin="round"
             {...props}
         >
+            {/* Bin Body - Static */}
+            <path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6" />
+
+            {/* Lid - Animated */}
             <motion.g
                 variants={variants.lid}
                 initial="initial"
                 animate={controls}
             >
                 <path d="M3 6h18" />
-                <path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6" />
                 <path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2" />
             </motion.g>
 
