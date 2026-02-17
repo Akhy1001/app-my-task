@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Switch, SwitchThumb, SwitchIcon } from "@/components/animate-ui/primitives/radix/switch";
 import { Check, Moon, Sun } from "lucide-react";
@@ -249,7 +249,7 @@ export default function TodoApp() {
                     <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
                     <div className="flex gap-2 items-center">
                         <div className="flex items-center mr-1">
-                            <Switch checked={theme === 'dark'} onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')} className="h-8 w-14 bg-neutral-200 dark:bg-neutral-800 border overflow-hidden border-neutral-200 dark:border-neutral-700 relative flex items-center p-1 cursor-pointer rounded-full [&[data-state=checked]]:justify-end [&[data-state=unchecked]]:justify-start">
+                            <Switch checked={theme === 'dark'} onCheckedChange={(checked: boolean) => setTheme(checked ? 'dark' : 'light')} className="h-8 w-14 bg-neutral-200 dark:bg-neutral-800 border overflow-hidden border-neutral-200 dark:border-neutral-700 relative flex items-center p-1 cursor-pointer rounded-full [&[data-state=checked]]:justify-end [&[data-state=unchecked]]:justify-start">
                                 <SwitchThumb className="h-6 w-6 bg-white dark:bg-black rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700 z-10 flex items-center justify-center">
                                     <SwitchIcon position="thumb" className="flex items-center justify-center h-full w-full text-neutral-900 dark:text-white">
                                         {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}

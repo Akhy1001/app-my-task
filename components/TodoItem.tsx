@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Pencil } from "lucide-react";
 import { Flag } from "@/components/animate-ui/icons/flag";
 import { ChevronLeft } from "@/components/animate-ui/icons/chevron-left";
@@ -57,6 +57,16 @@ const PRIORITY_LABELS = {
     medium: "Moyenne",
     high: "Haute",
 };
+
+const getPathAnimate = (isCompleted: boolean) => ({
+    pathLength: isCompleted ? 1 : 0,
+    opacity: isCompleted ? 1 : 0,
+});
+
+const getPathTransition = (isCompleted: boolean) => ({
+    pathLength: { duration: 0.5, ease: 'easeInOut' },
+    opacity: { duration: 0.01, delay: isCompleted ? 0 : 0.5 },
+});
 
 const TodoItem = memo(function TodoItem({
     todo,
@@ -126,16 +136,36 @@ const TodoItem = memo(function TodoItem({
 
                 <div className="flex-1 flex flex-col min-w-0">
                     <div className="flex items-center gap-2">
-                        <span
-                            className={cn(
-                                "text-sm font-medium transition-all break-words",
-                                todo.completed
-                                    ? "text-neutral-400 line-through decoration-neutral-400"
-                                    : "text-neutral-700 dark:text-neutral-200"
-                            )}
-                        >
-                            {todo.text}
-                        </span>
+                        <div className="relative">
+                            <span
+                                className={cn(
+                                    "text-sm font-medium transition-all break-words relative z-10",
+                                    todo.completed
+                                        ? "text-neutral-400"
+                                        : "text-neutral-700 dark:text-neutral-200"
+                                )}
+                            >
+                                {todo.text}
+                            </span>
+                            <motion.svg
+                                viewBox="0 0 340 32"
+                                className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none z-20 w-full h-[80%]"
+                                preserveAspectRatio="none"
+                            >
+                                <motion.path
+                                    d="M 10 16.91 s 79.8 -11.36 98.1 -11.34 c 22.2 0.02 -47.82 14.25 -33.39 22.02 c 12.61 6.77 124.18 -27.98 133.31 -17.28 c 7.52 8.38 -26.8 20.02 4.61 22.05 c 24.55 1.93 113.37 -20.36 113.37 -20.36"
+                                    vectorEffect="non-scaling-stroke"
+                                    strokeWidth={3}
+                                    strokeLinecap="round"
+                                    strokeMiterlimit={10}
+                                    fill="none"
+                                    initial={false}
+                                    animate={getPathAnimate(todo.completed)}
+                                    transition={getPathTransition(todo.completed)}
+                                    className="stroke-neutral-400/80 dark:stroke-neutral-500/80"
+                                />
+                            </motion.svg>
+                        </div>
                         {todo.priority && (
                             <span className={cn("text-[10px] uppercase font-bold px-1.5 py-0.5 rounded flex items-center gap-1", PRIORITY_COLORS[todo.priority])}>
                                 <Flag size={10} className="fill-current" />

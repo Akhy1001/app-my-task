@@ -8,7 +8,7 @@ import {
   type VariantLabels,
   type HTMLMotionProps,
   type LegacyAnimationControls,
-} from 'motion/react';
+} from 'framer-motion';
 
 import { getStrictContext } from '@/lib/get-strict-context';
 import { useControlledState } from '@/hooks/use-controlled-state';
