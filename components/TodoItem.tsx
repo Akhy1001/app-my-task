@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { memo, useRef, useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 
 type Priority = "low" | "medium" | "high";
 

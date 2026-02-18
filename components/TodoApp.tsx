@@ -61,9 +61,11 @@ export default function TodoApp() {
             try {
                 const parsed = JSON.parse(savedTodos);
                 // Migration logic: Convert string[] comments to Comment[]
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const migratedTodos = parsed.map((t: any) => ({
                     ...t,
                     horizon: t.horizon || 'short',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     comments: t.comments?.map((c: any) =>
                         typeof c === 'string'
                             ? { id: crypto.randomUUID(), text: c, isCompleted: false }
@@ -76,6 +78,7 @@ export default function TodoApp() {
             }
         }
         setIsLoaded(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Save todos to localStorage whenever they change
@@ -156,7 +159,7 @@ export default function TodoApp() {
         );
     }, []);
 
-    const startEditingComment = useCallback((todoId: string, index: number, text: string) => {
+    const startEditingComment = useCallback((todoId: string, index: number) => {
         setEditingComment({ todoId, index });
     }, []);
 
@@ -361,7 +364,7 @@ export default function TodoApp() {
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                                 <div className="p-4">
-                                    <label className="text-sm font-medium mb-2 block">Définir une date d'échéance</label>
+                                    <label className="text-sm font-medium mb-2 block">Définir une date d&apos;échéance</label>
                                     <Input
                                         type="date"
                                         value={dateValue}
@@ -455,7 +458,7 @@ export default function TodoApp() {
                                         exit={{ opacity: 0, scale: 0.95 }}
                                         className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-neutral-100 dark:border-neutral-800 rounded-xl"
                                     >
-                                        <p className="text-neutral-400 dark:text-neutral-500 text-sm">Rien à l'horizon</p>
+                                        <p className="text-neutral-400 dark:text-neutral-500 text-sm">Rien à l&apos;horizon</p>
                                     </motion.div>
                                 ) : (
                                     shortTermTodos.map((todo) => (

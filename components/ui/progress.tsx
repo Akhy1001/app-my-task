@@ -19,13 +19,13 @@ function useProgressContext() {
     return context;
 }
 
-interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {
-    value: number;
+type ProgressProps = React.HTMLAttributes<HTMLDivElement> & {
+    value?: number;
     max?: number;
 }
 
 const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-    ({ className, value, max = 100, children, ...props }, ref) => {
+    ({ className, value = 0, max = 100, children, ...props }, ref) => {
         return (
             <ProgressContext.Provider value={{ value, max }}>
                 <div
@@ -41,7 +41,7 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
 );
 Progress.displayName = "Progress";
 
-interface ProgressLabelProps extends React.HTMLAttributes<HTMLDivElement> { }
+type ProgressLabelProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ProgressLabel = React.forwardRef<HTMLDivElement, ProgressLabelProps>(
     ({ className, children, ...props }, ref) => {
@@ -58,7 +58,7 @@ const ProgressLabel = React.forwardRef<HTMLDivElement, ProgressLabelProps>(
 );
 ProgressLabel.displayName = "ProgressLabel";
 
-interface ProgressTrackProps extends React.HTMLAttributes<HTMLDivElement> { }
+type ProgressTrackProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ProgressTrack = React.forwardRef<HTMLDivElement, ProgressTrackProps>(
     ({ className, children, ...props }, ref) => {
@@ -79,7 +79,7 @@ const ProgressTrack = React.forwardRef<HTMLDivElement, ProgressTrackProps>(
 );
 ProgressTrack.displayName = "ProgressTrack";
 
-interface ProgressValueProps extends React.HTMLAttributes<HTMLDivElement> { }
+type ProgressValueProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ProgressValue = React.forwardRef<HTMLDivElement, ProgressValueProps>(
     ({ className, ...props }, ref) => {

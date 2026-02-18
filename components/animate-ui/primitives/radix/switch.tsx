@@ -7,7 +7,7 @@ import {
   type TargetAndTransition,
   type VariantLabels,
   type HTMLMotionProps,
-  type LegacyAnimationControls,
+  type AnimationControls,
 } from 'framer-motion';
 
 import { getStrictContext } from '@/lib/get-strict-context';
@@ -65,7 +65,7 @@ type SwitchThumbProps = Omit<
     | TargetAndTransition
     | VariantLabels
     | boolean
-    | LegacyAnimationControls;
+    | AnimationControls;
   };
 
 function SwitchThumb({
