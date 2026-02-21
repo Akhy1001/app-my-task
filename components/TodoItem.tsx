@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { Flag } from "@/components/animate-ui/icons/flag";
 import { ChevronLeft } from "@/components/animate-ui/icons/chevron-left";
 import { ChevronRight } from "@/components/animate-ui/icons/chevron-right";

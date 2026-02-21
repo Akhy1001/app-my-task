@@ -140,6 +140,7 @@ function Effect({
         ...transition,
         delay: (transition?.delay ?? 0) + delay / 1000,
       }}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(props as any)}
     />
   );

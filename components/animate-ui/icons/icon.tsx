@@ -409,6 +409,7 @@ function AnimateIcon({
       onMouseLeave={handleMouseLeave}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {...(props as any)}
     >
       {children}

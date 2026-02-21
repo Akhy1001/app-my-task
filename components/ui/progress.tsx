@@ -93,6 +93,7 @@ const ProgressValue = React.forwardRef<HTMLDivElement, ProgressValueProps>(
                 initial={{ width: 0 }}
                 animate={{ width: `${percentage}%` }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 {...props as any}
             />
         );

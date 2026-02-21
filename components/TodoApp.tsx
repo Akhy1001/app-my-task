@@ -72,13 +72,13 @@ export default function TodoApp() {
                             : c
                     ) || []
                 }));
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setTodos(migratedTodos);
             } catch (error) {
                 console.error("Failed to parse todos from localStorage:", error);
             }
         }
         setIsLoaded(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Save todos to localStorage whenever they change
