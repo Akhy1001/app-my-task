@@ -127,7 +127,7 @@ export default function TodoApp() {
         setExpandedTodoId((prev) => (prev === id ? null : prev));
     }, []);
 
-    const addComment = useCallback((id: string, commentText: string) => {
+    const addComment = useCallback((id: string, commentText: string, date?: string) => {
         setTodos((prev) =>
             prev.map((todo) =>
                 todo.id === id
@@ -135,7 +135,7 @@ export default function TodoApp() {
                         ...todo,
                         comments: [
                             ...(todo.comments || []),
-                            { id: crypto.randomUUID(), text: commentText, isCompleted: false }
+                            { id: crypto.randomUUID(), text: commentText, isCompleted: false, date }
                         ]
                     }
                     : todo

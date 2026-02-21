@@ -409,7 +409,7 @@ function AnimateIcon({
       onMouseLeave={handleMouseLeave}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      {...props}
+      {...(props as any)}
     >
       {children}
     </Slot>

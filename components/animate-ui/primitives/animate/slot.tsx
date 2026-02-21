@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, isMotionComponent, type HTMLMotionProps } from 'framer-motion';
+import { motion, isMotionComponent, type HTMLMotionProps } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 type AnyProps = Record<string, unknown>;
@@ -58,8 +58,6 @@ function mergeProps<T extends HTMLElement>(
   return merged;
 }
 
-const motionComponentCache = new Map<React.ElementType, React.ElementType>();
-
 function Slot<T extends HTMLElement = HTMLElement>({
   children,
   ref,
@@ -70,18 +68,11 @@ function Slot<T extends HTMLElement = HTMLElement>({
     children.type !== null &&
     isMotionComponent(children.type);
 
-  if (!isAlreadyMotion) {
-    const childType = children.type as React.ElementType;
-    if (!motionComponentCache.has(childType)) {
-      motionComponentCache.set(childType, motion.create(childType));
-    }
-  }
-
   const Base = React.useMemo(
     () =>
       isAlreadyMotion
         ? (children.type as React.ElementType)
-        : motionComponentCache.get(children.type as React.ElementType)!,
+        : motion.create(children.type as React.ElementType),
     [isAlreadyMotion, children.type],
   );
 

@@ -10,6 +10,7 @@ import { Calendar } from "@/components/animate-ui/icons/calendar";
 import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 
@@ -19,6 +20,7 @@ export interface Comment {
     id: string;
     text: string;
     isCompleted: boolean;
+    date?: string;
 }
 
 export interface Todo {
@@ -35,7 +37,7 @@ interface TodoItemProps {
     todo: Todo;
     toggleTodo: (id: string) => void;
     deleteTodo: (id: string) => void;
-    addComment: (id: string, comment: string) => void;
+    addComment: (id: string, comment: string, date?: string) => void;
     toggleComments: (id: string) => void;
     toggleComment: (todoId: string, commentId: string) => void;
     isExpanded: boolean;
@@ -83,6 +85,7 @@ const TodoItem = memo(function TodoItem({
     onMoveToHorizon,
 }: TodoItemProps) {
     const [localCommentInput, setLocalCommentInput] = useState("");
+    const [localCommentDate, setLocalCommentDate] = useState("");
     const [localEditText, setLocalEditText] = useState("");
 
     const hasIncompleteComments = todo.comments?.some(c => !c.isCompleted) ?? false;
@@ -96,8 +99,9 @@ const TodoItem = memo(function TodoItem({
 
     const handleAddComment = () => {
         if (localCommentInput.trim()) {
-            addComment(todo.id, localCommentInput);
+            addComment(todo.id, localCommentInput, localCommentDate || undefined);
             setLocalCommentInput("");
+            setLocalCommentDate("");
         }
     };
 
@@ -261,7 +265,15 @@ const TodoItem = memo(function TodoItem({
                                                 </div>
                                             ) : (
                                                 <>
-                                                    <span className={cn("flex-1 break-words transition-all", comment.isCompleted && "text-neutral-400 line-through decoration-neutral-400")}>{comment.text}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={cn("block break-words transition-all", comment.isCompleted && "text-neutral-400 line-through decoration-neutral-400")}>{comment.text}</span>
+                                                        {comment.date && (
+                                                            <div className="flex items-center gap-1 mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                                                                <Calendar className="h-3 w-3" />
+                                                                <span>{new Date(comment.date).toLocaleDateString("fr-FR")}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                     <button
                                                         onClick={() => handleStartEditing(index, comment.text)}
                                                         className="opacity-100 text-neutral-400 hover:text-blue-500 transition-opacity p-1"
@@ -286,7 +298,31 @@ const TodoItem = memo(function TodoItem({
                                     onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
                                     autoFocus={!editingComment}
                                 />
-                                <Button onClick={handleAddComment} size="icon" className="h-9 w-9">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" size="icon" className={cn("h-9 w-9 shrink-0 transition-colors", localCommentDate ? "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800" : "text-neutral-400")}>
+                                            <Calendar animateOnHover className="h-4 w-4" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="end">
+                                        <div className="p-4">
+                                            <label className="text-sm font-medium mb-2 block">Définir une date d&apos;échéance</label>
+                                            <Input
+                                                type="date"
+                                                value={localCommentDate}
+                                                onChange={(e) => setLocalCommentDate(e.target.value)}
+                                                className="w-full text-neutral-500 dark:text-neutral-400"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        handleAddComment();
+                                                        // Note: We don't manually close the popover here as standard behavior usually requires user dismissal, but clicking outside or pressing Escape handles it.
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                                <Button onClick={handleAddComment} size="icon" className="h-9 w-9 shrink-0">
                                     <Send animateOnHover className="h-4 w-4" />
                                 </Button>
                             </div>

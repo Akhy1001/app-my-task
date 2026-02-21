@@ -38,7 +38,7 @@ type EffectProps = WithAsChild<
     zoom?: Zoom | boolean;
     ref?: React.Ref<HTMLElement>;
   } & UseIsInViewOptions &
-    HTMLMotionProps<'div'>
+  HTMLMotionProps<'div'>
 >;
 
 const DEFAULT_SLIDE_DIRECTION: SlideDirection = 'up';
@@ -140,7 +140,7 @@ function Effect({
         ...transition,
         delay: (transition?.delay ?? 0) + delay / 1000,
       }}
-      {...props}
+      {...(props as any)}
     />
   );
 }
