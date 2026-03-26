@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, type Transition } from 'framer-motion';
+import { motion, type Transition } from 'motion/react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/animate-ui/components/radix/checkbox';
 

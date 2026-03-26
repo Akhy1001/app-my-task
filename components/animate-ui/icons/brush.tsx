@@ -10,37 +10,28 @@ import {
   type IconProps,
 } from '@/components/animate-ui/icons/icon';
 
-type ClockProps = IconProps<keyof typeof animations>;
+type BrushProps = IconProps<keyof typeof animations>;
 
 const animations = {
   default: {
-    circle: {},
-    line1: {
+    group: {
       initial: {
         rotate: 0,
-        transition: { ease: 'easeInOut', duration: 0.6 },
+        transition: { duration: 0.6, ease: 'easeInOut' },
       },
       animate: {
-        transformOrigin: 'top left',
-        rotate: [0, 20, 0],
-        transition: { ease: 'easeInOut', duration: 0.6 },
+        rotate: [0, -6, 6, 0],
+        transformOrigin: 'top right',
+        transition: { duration: 0.6, ease: 'easeInOut' },
       },
     },
-    line2: {
-      initial: {
-        rotate: 0,
-        transition: { ease: 'easeInOut', duration: 0.6 },
-      },
-      animate: {
-        transformOrigin: 'bottom left',
-        rotate: 360,
-        transition: { ease: 'easeInOut', duration: 0.6 },
-      },
-    },
+    path1: {},
+    path2: {},
+    path3: {},
   } satisfies Record<string, Variants>,
 } as const;
 
-function IconComponent({ size, ...props }: ClockProps) {
+function IconComponent({ size, ...props }: BrushProps) {
   const { controls } = useAnimateIconContext();
   const variants = getVariants(animations);
 
@@ -55,31 +46,26 @@ function IconComponent({ size, ...props }: ClockProps) {
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
+      variants={variants.group}
+      initial="initial"
+      animate={controls}
       {...props}
     >
-      <motion.circle
-        cx={12}
-        cy={12}
-        r={10}
-        variants={variants.circle}
+      <motion.path
+        d="m11 10 3 3"
+        variants={variants.path1}
         initial="initial"
         animate={controls}
       />
-      <motion.line
-        x1={12}
-        y1={12}
-        x2={16}
-        y2={14}
-        variants={variants.line1}
+      <motion.path
+        d="M6.5 21A3.5 3.5 0 1 0 3 17.5a2.62 2.62 0 0 1-.708 1.792A1 1 0 0 0 3 21z"
+        variants={variants.path2}
         initial="initial"
         animate={controls}
       />
-      <motion.line
-        x1={12}
-        y1={6}
-        x2={12}
-        y2={12}
-        variants={variants.line2}
+      <motion.path
+        d="M9.969 17.031 21.378 5.624a1 1 0 0 0-3.002-3.002L6.967 14.031"
+        variants={variants.path3}
         initial="initial"
         animate={controls}
       />
@@ -87,14 +73,14 @@ function IconComponent({ size, ...props }: ClockProps) {
   );
 }
 
-function Clock(props: ClockProps) {
+function Brush(props: BrushProps) {
   return <IconWrapper icon={IconComponent} {...props} />;
 }
 
 export {
   animations,
-  Clock,
-  Clock as ClockIcon,
-  type ClockProps,
-  type ClockProps as ClockIconProps,
+  Brush,
+  Brush as BrushIcon,
+  type BrushProps,
+  type BrushProps as BrushIconProps,
 };

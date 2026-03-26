@@ -72,6 +72,7 @@ function Slot<T extends HTMLElement = HTMLElement>({
     () =>
       isAlreadyMotion
         ? (children.type as React.ElementType)
+        // eslint-disable-next-line react-hooks/static-components
         : motion.create(children.type as React.ElementType),
     [isAlreadyMotion, children.type],
   );
@@ -83,7 +84,7 @@ function Slot<T extends HTMLElement = HTMLElement>({
   const mergedProps = mergeProps(childProps, props);
 
   return (
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/static-components
     <Base {...mergedProps} ref={mergeRefs(childRef as React.Ref<T>, ref)} />
   );
 }

@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Pencil } from "lucide-react";
+import { motion, AnimatePresence } from 'motion/react';
+import { Brush } from "@/components/animate-ui/icons/brush";
 import { Flag } from "@/components/animate-ui/icons/flag";
 import { ChevronLeft } from "@/components/animate-ui/icons/chevron-left";
 import { ChevronRight } from "@/components/animate-ui/icons/chevron-right";
@@ -40,6 +40,7 @@ interface TodoItemProps {
     addComment: (id: string, comment: string, date?: string) => void;
     toggleComments: (id: string) => void;
     toggleComment: (todoId: string, commentId: string) => void;
+    deleteComment: (todoId: string, commentId: string) => void;
     isExpanded: boolean;
     editingComment: { todoId: string; index: number } | null;
     startEditingComment: (todoId: string, index: number, text: string) => void;
@@ -66,7 +67,7 @@ const getPathAnimate = (isCompleted: boolean) => ({
 });
 
 const getPathTransition = (isCompleted: boolean) => ({
-    pathLength: { duration: 0.5, ease: 'easeInOut' },
+    pathLength: { duration: 0.5, ease: 'easeInOut' as const },
     opacity: { duration: 0.01, delay: isCompleted ? 0 : 0.5 },
 });
 
@@ -77,6 +78,7 @@ const TodoItem = memo(function TodoItem({
     addComment,
     toggleComments,
     toggleComment,
+    deleteComment,
     isExpanded,
     editingComment,
     startEditingComment,
@@ -294,12 +296,22 @@ const TodoItem = memo(function TodoItem({
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleStartEditing(index, comment.text)}
-                                                        className="opacity-100 text-neutral-400 hover:text-blue-500 transition-opacity p-1"
-                                                    >
-                                                        <Pencil className="h-3 w-3" />
-                                                    </button>
+                                                    <div className="flex shrink-0">
+                                                        <button
+                                                            onClick={() => handleStartEditing(index, comment.text)}
+                                                            className="opacity-100 text-neutral-400 hover:text-blue-500 transition-opacity p-1"
+                                                            title="Modifier la sous-tâche"
+                                                        >
+                                                            <Brush animateOnHover className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteComment(todo.id, comment.id)}
+                                                            className="opacity-100 text-neutral-400 hover:text-red-500 transition-opacity p-1"
+                                                            title="Supprimer la sous-tâche"
+                                                        >
+                                                            <Trash2 animateOnHover className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
                                                 </>
                                             )}
                                         </li>

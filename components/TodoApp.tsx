@@ -17,6 +17,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Progress, ProgressLabel, ProgressTrack } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import TodoItem, { Todo } from "./TodoItem";
+import SplashScreen from "./SplashScreen";
 
 type Priority = "low" | "medium" | "high";
 type SortOption = "default" | "date" | "priority";
@@ -50,6 +51,7 @@ export default function TodoApp() {
     const [sortOption, setSortOption] = useState<SortOption>("default");
     const [expandedTodoId, setExpandedTodoId] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [showSplash, setShowSplash] = useState(true);
 
     // State for editing comments - Coordination still in parent to ensure only one edit at a time
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
@@ -79,6 +81,8 @@ export default function TodoApp() {
             }
         }
         setIsLoaded(true);
+        const timer = setTimeout(() => setShowSplash(false), 2000);
+        return () => clearTimeout(timer);
     }, []);
 
     // Save todos to localStorage whenever they change
@@ -152,6 +156,20 @@ export default function TodoApp() {
                         comments: todo.comments?.map(c =>
                             c.id === commentId ? { ...c, isCompleted: !c.isCompleted } : c
                         )
+                    };
+                }
+                return todo;
+            })
+        );
+    }, []);
+
+    const deleteComment = useCallback((todoId: string, commentId: string) => {
+        setTodos((prev) =>
+            prev.map((todo) => {
+                if (todo.id === todoId) {
+                    return {
+                        ...todo,
+                        comments: todo.comments?.filter(c => c.id !== commentId)
                     };
                 }
                 return todo;
@@ -242,12 +260,16 @@ export default function TodoApp() {
 
     // Prevent hydration mismatch by rendering null until loaded
     if (!isLoaded) {
-        return null;
+        return <SplashScreen />;
     }
 
     return (
-        <div className="w-[98%] mx-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 transition-all duration-300 h-[85vh] flex flex-col my-4">
-            <div className="p-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
+        <>
+            <AnimatePresence>
+                {showSplash && <SplashScreen />}
+            </AnimatePresence>
+            <div className="w-[98%] mx-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 transition-all duration-300 h-[85vh] flex flex-col my-4">
+                <div className="p-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
                     <div className="flex gap-2 items-center">
@@ -470,6 +492,7 @@ export default function TodoApp() {
                                             addComment={addComment}
                                             toggleComments={toggleComments}
                                             toggleComment={toggleComment}
+                                            deleteComment={deleteComment}
                                             isExpanded={expandedTodoId === todo.id}
                                             editingComment={editingComment}
                                             startEditingComment={startEditingComment}
@@ -507,6 +530,7 @@ export default function TodoApp() {
                                             addComment={addComment}
                                             toggleComments={toggleComments}
                                             toggleComment={toggleComment}
+                                            deleteComment={deleteComment}
                                             isExpanded={expandedTodoId === todo.id}
                                             editingComment={editingComment}
                                             startEditingComment={startEditingComment}
@@ -535,6 +559,7 @@ export default function TodoApp() {
                     )}
                 </div>
             </div>
-        </div >
+        </div>
+        </>
     );
 }

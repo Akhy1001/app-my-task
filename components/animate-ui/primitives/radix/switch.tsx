@@ -7,8 +7,8 @@ import {
   type TargetAndTransition,
   type VariantLabels,
   type HTMLMotionProps,
-  type AnimationControls,
-} from 'framer-motion';
+  type LegacyAnimationControls,
+} from 'motion/react';
 
 import { getStrictContext } from '@/lib/get-strict-context';
 import { useControlledState } from '@/hooks/use-controlled-state';
@@ -65,7 +65,7 @@ type SwitchThumbProps = Omit<
     | TargetAndTransition
     | VariantLabels
     | boolean
-    | AnimationControls;
+    | LegacyAnimationControls;
   };
 
 function SwitchThumb({
