@@ -13,7 +13,7 @@ export default function SplashScreen() {
     >
       <div className="relative flex flex-col items-center">
         {/* Background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-500/20 dark:bg-blue-500/10 blur-3xl rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-neutral-400/20 dark:bg-neutral-600/10 blur-3xl rounded-full" />
         
         <motion.div
           initial={{ scale: 0.5, opacity: 0, rotate: -10 }}
@@ -26,7 +26,7 @@ export default function SplashScreen() {
           }}
           className="relative bg-white dark:bg-neutral-900 p-4 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 mb-8"
         >
-          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-4 rounded-2xl flex items-center justify-center shadow-inner">
+          <div className="bg-black dark:bg-white text-white dark:text-black p-4 rounded-2xl flex items-center justify-center shadow-inner">
             <Check size={40} strokeWidth={3} />
           </div>
         </motion.div>
@@ -41,7 +41,7 @@ export default function SplashScreen() {
             My Task
           </h1>
           <motion.div 
-            className="h-1.5 w-16 bg-gradient-to-r from-blue-500 to-indigo-600 mx-auto rounded-full"
+            className="h-1.5 w-16 bg-black dark:bg-white mx-auto rounded-full"
             initial={{ width: 0 }}
             animate={{ width: 64 }}
             transition={{ delay: 0.6, duration: 0.5, ease: "easeInOut" }}
@@ -55,9 +55,9 @@ export default function SplashScreen() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
       >
-        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-        <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+        <span className="w-2.5 h-2.5 bg-neutral-800 dark:bg-neutral-200 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+        <span className="w-2.5 h-2.5 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+        <span className="w-2.5 h-2.5 bg-neutral-800 dark:bg-neutral-200 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
       </motion.div>
     </motion.div>
   );
