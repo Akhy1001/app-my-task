@@ -7,6 +7,7 @@ import { Trash2 } from "@/components/animate-ui/icons/trash2";
 import { MessageSquare } from "@/components/animate-ui/icons/message-square";
 import { Send } from "@/components/animate-ui/icons/send";
 import { Calendar } from "@/components/animate-ui/icons/calendar";
+import { ListTodo } from "lucide-react";
 import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -116,6 +117,10 @@ const TodoItem = memo(function TodoItem({
         saveEditComment(todo.id, index, localEditText);
     };
 
+    const totalComments = todo.comments?.length || 0;
+    const completedComments = todo.comments?.filter(c => c.isCompleted).length || 0;
+    const progressPercentage = totalComments > 0 ? (completedComments / totalComments) * 100 : 0;
+
     return (
         <motion.div
             layout
@@ -179,12 +184,28 @@ const TodoItem = memo(function TodoItem({
                             </span>
                         )}
                     </div>
-                    {todo.date && (
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(todo.date).toLocaleDateString("fr-FR")}</span>
-                        </div>
-                    )}
+                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        {todo.date && (
+                            <div className="flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-700">
+                                <Calendar className="h-3 w-3" />
+                                <span>{new Date(todo.date).toLocaleDateString("fr-FR")}</span>
+                            </div>
+                        )}
+                        {totalComments > 0 && (
+                            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-700">
+                                <ListTodo className="h-3 w-3 text-neutral-400" />
+                                <div className="w-12 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                                    <motion.div 
+                                        className="h-full bg-blue-500 rounded-full" 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progressPercentage}%` }}
+                                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                                    />
+                                </div>
+                                <span className="text-[10px] font-medium">{completedComments}/{totalComments}</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex gap-1 shrink-0">
@@ -212,7 +233,7 @@ const TodoItem = memo(function TodoItem({
                         )}
                     >
                         <div className="relative">
-                            <MessageSquare animateOnHover className="h-4 w-4" />
+                            <ListTodo className="h-4 w-4 transition-transform group-hover:scale-110" />
                             {hasIncompleteComments && !todo.completed && (
                                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-orange-500" />
                             )}
@@ -238,10 +259,18 @@ const TodoItem = memo(function TodoItem({
                         <div className="p-3 space-y-3">
                             {todo.comments && todo.comments.length > 0 ? (
                                 <ul className="space-y-2">
-                                    {todo.comments.map((comment, index) => (
-                                        <li key={comment.id} className="text-sm text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800 shadow-sm group/comment flex items-start gap-3">
-                                            <Checkbox
-                                                checked={comment.isCompleted}
+                                    <AnimatePresence initial={false}>
+                                        {todo.comments.map((comment, index) => (
+                                            <motion.li 
+                                                key={comment.id} 
+                                                initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, height: "auto", scale: 1 }}
+                                                exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="text-sm text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800 shadow-sm group/comment flex items-start gap-3 overflow-hidden"
+                                            >
+                                                <Checkbox
+                                                    checked={comment.isCompleted}
                                                 onCheckedChange={() => toggleComment(todo.id, comment.id)}
                                                 className={cn(
                                                     "mt-0.5 transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
@@ -314,8 +343,9 @@ const TodoItem = memo(function TodoItem({
                                                     </div>
                                                 </>
                                             )}
-                                        </li>
-                                    ))}
+                                            </motion.li>
+                                        ))}
+                                    </AnimatePresence>
                                 </ul>
                             ) : (
                                 <p className="text-xs text-neutral-400 italic">Aucune sous-tâche pour le moment</p>
