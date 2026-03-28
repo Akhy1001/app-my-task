@@ -62,30 +62,40 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
 
     const { theme, setTheme } = useTheme();
+    const [lastChangeTime, setLastChangeTime] = useState(0);
 
     // Load data from API on mount and poll for changes
     useEffect(() => {
         const loadData = async (silent = false) => {
+            // If we have unsaved local changes (within the last 3 seconds), skip polling update
+            if (silent && Date.now() - lastChangeTime < 3000) {
+                return;
+            }
+
             try {
                 const response = await fetch(`/api/todos?user=${user}`);
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Handle structure: old array or new { todos, settings }
                     const newTodos = Array.isArray(data) ? data : (data.todos || []);
                     const newSettings = Array.isArray(data) ? {} : (data.settings || {});
 
                     setTodos(prev => {
+                        // Crucial check: if we just changed something locally, don't overwrite
+                        if (Date.now() - lastChangeTime < 3000) return prev;
+                        
                         if (JSON.stringify(prev) === JSON.stringify(newTodos)) return prev;
                         return newTodos;
                     });
 
-                    // Sync settings (theme and sort)
-                    if (newSettings.theme && newSettings.theme !== theme) {
-                        setTheme(newSettings.theme);
-                    }
-                    if (newSettings.sortOption && newSettings.sortOption !== sortOption) {
-                        setSortOption(newSettings.sortOption);
+                    // Sync settings only if not recently changed locally
+                    if (Date.now() - lastChangeTime >= 3000) {
+                        if (newSettings.theme && newSettings.theme !== theme) {
+                            setTheme(newSettings.theme);
+                        }
+                        if (newSettings.sortOption && newSettings.sortOption !== sortOption) {
+                            setSortOption(newSettings.sortOption);
+                        }
                     }
                 }
             } catch (error) {
@@ -100,10 +110,16 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
         
         loadData();
 
-        // Polling loop for multi-device synchronization
         const interval = setInterval(() => loadData(true), 5000);
         return () => clearInterval(interval);
-    }, [user, theme, setTheme, sortOption]);
+    }, [user, theme, setTheme, sortOption, lastChangeTime]);
+
+    // Track local changes to prevent polling overwrites
+    useEffect(() => {
+        if (isLoaded) {
+            setLastChangeTime(Date.now());
+        }
+    }, [todos, theme, sortOption]);
 
     // Save data to API whenever tasks or settings change
     useEffect(() => {
@@ -123,7 +139,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                 }
             };
 
-            const timer = setTimeout(saveData, 500); // Debounce save
+            const timer = setTimeout(saveData, 500);
             return () => clearTimeout(timer);
         }
     }, [todos, theme, sortOption, isLoaded, user]);
