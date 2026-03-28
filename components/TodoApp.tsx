@@ -93,7 +93,10 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             }
 
             try {
-                const response = await fetch(`/api/todos?user=${user}`);
+                const response = await fetch(`/api/todos?user=${user}&t=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
                 if (response.ok) {
                     const data = await response.json();
                     
