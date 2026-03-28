@@ -40,7 +40,12 @@ const PRIORITY_VALUES = {
     low: 1,
 };
 
-export default function TodoApp() {
+interface TodoAppProps {
+    user: 'anas' | 'rose';
+    onLogout: () => void;
+}
+
+export default function TodoApp({ user, onLogout }: TodoAppProps) {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [dateValue, setDateValue] = useState("");
@@ -56,41 +61,45 @@ export default function TodoApp() {
     // State for editing comments - Coordination still in parent to ensure only one edit at a time
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
 
-    // Load todos from localStorage on mount
+    // Load todos from API on mount
     useEffect(() => {
-        const savedTodos = localStorage.getItem("todos");
-        if (savedTodos) {
+        const loadTodos = async () => {
             try {
-                const parsed = JSON.parse(savedTodos);
-                // Migration logic: Convert string[] comments to Comment[]
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const migratedTodos = parsed.map((t: any) => ({
-                    ...t,
-                    horizon: t.horizon || 'short',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    comments: t.comments?.map((c: any) =>
-                        typeof c === 'string'
-                            ? { id: crypto.randomUUID(), text: c, isCompleted: false }
-                            : c
-                    ) || []
-                }));
-                // eslint-disable-next-line react-hooks/set-state-in-effect
-                setTodos(migratedTodos);
+                const response = await fetch(`/api/todos?user=${user}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setTodos(data);
+                }
             } catch (error) {
-                console.error("Failed to parse todos from localStorage:", error);
+                console.error("Failed to fetch todos:", error);
+            } finally {
+                setIsLoaded(true);
+                const timer = setTimeout(() => setShowSplash(false), 2000);
             }
-        }
-        setIsLoaded(true);
-        const timer = setTimeout(() => setShowSplash(false), 2000);
-        return () => clearTimeout(timer);
-    }, []);
+        };
+        
+        loadTodos();
+    }, [user]);
 
-    // Save todos to localStorage whenever they change
+    // Save todos to API whenever they change
     useEffect(() => {
         if (isLoaded) {
-            localStorage.setItem("todos", JSON.stringify(todos));
+            const saveTodos = async () => {
+                try {
+                    await fetch(`/api/todos?user=${user}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(todos),
+                    });
+                } catch (error) {
+                    console.error("Failed to save todos:", error);
+                }
+            };
+
+            const timer = setTimeout(saveTodos, 500); // Debounce save
+            return () => clearTimeout(timer);
         }
-    }, [todos, isLoaded]);
+    }, [todos, isLoaded, user]);
 
     const addTodo = useCallback(() => {
         if (inputValue.trim() === "") return;
@@ -271,8 +280,26 @@ export default function TodoApp() {
             <div className="w-[98%] mx-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 transition-all duration-300 h-[85vh] flex flex-col my-4">
                 <div className="p-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
                 <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
+                    <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
+                        <span className={cn(
+                            "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ml-2 border",
+                            user === 'anas' 
+                                ? "bg-blue-50 text-blue-500 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800" 
+                                : "bg-rose-50 text-rose-500 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800"
+                        )}>
+                            {user}
+                        </span>
+                    </div>
                     <div className="flex gap-2 items-center">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={onLogout}
+                            className="text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white mr-2"
+                        >
+                            Déconnexion
+                        </Button>
                         <div className="flex items-center mr-1">
                             <Switch checked={theme === 'dark'} onCheckedChange={(checked: boolean) => setTheme(checked ? 'dark' : 'light')} className="h-8 w-14 bg-neutral-200 dark:bg-neutral-800 border overflow-hidden border-neutral-200 dark:border-neutral-700 relative flex items-center p-1 cursor-pointer rounded-full [&[data-state=checked]]:justify-end [&[data-state=unchecked]]:justify-start">
                                 <SwitchThumb className="h-6 w-6 bg-white dark:bg-black rounded-full shadow-sm border border-neutral-200 dark:border-neutral-700 z-10 flex items-center justify-center">
