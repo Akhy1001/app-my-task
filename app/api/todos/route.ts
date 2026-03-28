@@ -18,7 +18,8 @@ export async function GET(request: Request) {
         return NextResponse.json(JSON.parse(data));
     } catch (error) {
         console.error('Error reading todos:', error);
-        return NextResponse.json([], { status: 200 }); // Return empty if file doesn't exist yet or error
+        // Return default structure if file doesn't exist
+        return NextResponse.json({ todos: [], settings: {} }, { status: 200 });
     }
 }
 
@@ -31,13 +32,13 @@ export async function POST(request: Request) {
     }
 
     try {
-        const body = await request.json();
+        const body = await request.json(); // Expected: { todos: [], settings: {} }
         const filePath = path.join(DATA_DIR, `${user}.json`);
         await fs.mkdir(DATA_DIR, { recursive: true });
         await fs.writeFile(filePath, JSON.stringify(body, null, 2));
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error saving todos:', error);
-        return NextResponse.json({ error: 'Failed to save todos' }, { status: 500 });
+        console.error('Error saving data:', error);
+        return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
     }
 }

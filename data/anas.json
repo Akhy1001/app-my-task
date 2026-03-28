@@ -1,10 +1,16 @@
-[
-  {
-    "id": "72429b7f-d8da-40cf-92ea-7c7924e1c8cf",
-    "text": "Task for Anas",
-    "completed": false,
-    "date": "",
-    "comments": [],
-    "horizon": "short"
+{
+  "todos": [
+    {
+      "id": "72429b7f-d8da-40cf-92ea-7c7924e1c8cf",
+      "text": "Task for Anas",
+      "completed": false,
+      "date": "",
+      "comments": [],
+      "horizon": "short"
+    }
+  ],
+  "settings": {
+    "theme": "light",
+    "sortOption": "default"
   }
-]
+}

@@ -61,45 +61,72 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
     // State for editing comments - Coordination still in parent to ensure only one edit at a time
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
 
-    // Load todos from API on mount
+    const { theme, setTheme } = useTheme();
+
+    // Load data from API on mount and poll for changes
     useEffect(() => {
-        const loadTodos = async () => {
+        const loadData = async (silent = false) => {
             try {
                 const response = await fetch(`/api/todos?user=${user}`);
                 if (response.ok) {
                     const data = await response.json();
-                    setTodos(data);
+                    
+                    // Handle structure: old array or new { todos, settings }
+                    const newTodos = Array.isArray(data) ? data : (data.todos || []);
+                    const newSettings = Array.isArray(data) ? {} : (data.settings || {});
+
+                    setTodos(prev => {
+                        if (JSON.stringify(prev) === JSON.stringify(newTodos)) return prev;
+                        return newTodos;
+                    });
+
+                    // Sync settings (theme and sort)
+                    if (newSettings.theme && newSettings.theme !== theme) {
+                        setTheme(newSettings.theme);
+                    }
+                    if (newSettings.sortOption && newSettings.sortOption !== sortOption) {
+                        setSortOption(newSettings.sortOption);
+                    }
                 }
             } catch (error) {
-                console.error("Failed to fetch todos:", error);
+                console.error("Failed to fetch data:", error);
             } finally {
-                setIsLoaded(true);
-                const timer = setTimeout(() => setShowSplash(false), 2000);
+                if (!silent) {
+                    setIsLoaded(true);
+                    const timer = setTimeout(() => setShowSplash(false), 2000);
+                }
             }
         };
         
-        loadTodos();
-    }, [user]);
+        loadData();
 
-    // Save todos to API whenever they change
+        // Polling loop for multi-device synchronization
+        const interval = setInterval(() => loadData(true), 5000);
+        return () => clearInterval(interval);
+    }, [user, theme, setTheme, sortOption]);
+
+    // Save data to API whenever tasks or settings change
     useEffect(() => {
         if (isLoaded) {
-            const saveTodos = async () => {
+            const saveData = async () => {
                 try {
                     await fetch(`/api/todos?user=${user}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(todos),
+                        body: JSON.stringify({ 
+                            todos, 
+                            settings: { theme, sortOption } 
+                        }),
                     });
                 } catch (error) {
-                    console.error("Failed to save todos:", error);
+                    console.error("Failed to save data:", error);
                 }
             };
 
-            const timer = setTimeout(saveTodos, 500); // Debounce save
+            const timer = setTimeout(saveData, 500); // Debounce save
             return () => clearTimeout(timer);
         }
-    }, [todos, isLoaded, user]);
+    }, [todos, theme, sortOption, isLoaded, user]);
 
     const addTodo = useCallback(() => {
         if (inputValue.trim() === "") return;
@@ -264,8 +291,6 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
 
     const completedCount = todos.filter(t => t.completed).length;
     const progress = todos.length > 0 ? (completedCount / todos.length) * 100 : 0;
-
-    const { theme, setTheme } = useTheme();
 
     // Prevent hydration mismatch by rendering null until loaded
     if (!isLoaded) {
