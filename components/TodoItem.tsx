@@ -125,7 +125,7 @@ const TodoItem = memo(function TodoItem({
         <motion.div
             layout
             className={cn(
-                "group flex flex-col rounded-xl border transition-all duration-200 overflow-hidden",
+                "group flex flex-col rounded-xl border transition-colors duration-200 overflow-hidden",
                 todo.completed
                     ? "bg-neutral-50 border-transparent dark:bg-neutral-800/50"
                     : "bg-white border-neutral-100 hover:border-neutral-200 shadow-sm dark:bg-neutral-900 dark:border-neutral-800 dark:hover:border-neutral-700"
@@ -254,7 +254,7 @@ const TodoItem = memo(function TodoItem({
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800"
+                        className="bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 overflow-hidden"
                     >
                         <div className="p-3 space-y-3">
                             {todo.comments && todo.comments.length > 0 ? (
