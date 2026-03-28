@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { Switch, SwitchThumb, SwitchIcon } from "@/components/animate-ui/primitives/radix/switch";
@@ -47,28 +47,48 @@ interface TodoAppProps {
 
 export default function TodoApp({ user, onLogout }: TodoAppProps) {
     const [todos, setTodos] = useState<Todo[]>([]);
+    const lastChangeRef = useRef(0);
+
+    const markLocalChange = useCallback(() => {
+        lastChangeRef.current = Date.now();
+    }, []);
+
+    const setTodosWithSync = useCallback((updater: React.SetStateAction<Todo[]>) => {
+        markLocalChange();
+        setTodos(updater);
+    }, [markLocalChange]);
+
+    const { theme, setTheme: setRawTheme } = useTheme();
+
+    const setTheme = useCallback((newTheme: string) => {
+        markLocalChange();
+        setRawTheme(newTheme);
+    }, [markLocalChange, setRawTheme]);
+
     const [inputValue, setInputValue] = useState("");
     const [dateValue, setDateValue] = useState("");
     const [priorityValue, setPriorityValue] = useState<Priority | undefined>(undefined);
     const [horizonValue, setHorizonValue] = useState<'short' | 'long'>('short');
     const [searchQuery, setSearchQuery] = useState("");
     const [isSearchVisible, setIsSearchVisible] = useState(false);
-    const [sortOption, setSortOption] = useState<SortOption>("default");
+    
+    const [sortOption, setSortOptionRaw] = useState<SortOption>("default");
+    const setSortOption = useCallback((newOption: SortOption | ((prev: SortOption) => SortOption)) => {
+        markLocalChange();
+        setSortOptionRaw(newOption);
+    }, [markLocalChange]);
+
     const [expandedTodoId, setExpandedTodoId] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [showSplash, setShowSplash] = useState(true);
 
-    // State for editing comments - Coordination still in parent to ensure only one edit at a time
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
-
-    const { theme, setTheme } = useTheme();
-    const [lastChangeTime, setLastChangeTime] = useState(0);
 
     // Load data from API on mount and poll for changes
     useEffect(() => {
         const loadData = async (silent = false) => {
-            // If we have unsaved local changes (within the last 3 seconds), skip polling update
-            if (silent && Date.now() - lastChangeTime < 3000) {
+            // If we have unsaved local changes (within the last 5 seconds), skip polling update
+            if (silent && Date.now() - lastChangeRef.current < 5000) {
                 return;
             }
 
@@ -82,16 +102,16 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
 
                     setTodos(prev => {
                         // Crucial check: if we just changed something locally, don't overwrite
-                        if (Date.now() - lastChangeTime < 3000) return prev;
+                        if (Date.now() - lastChangeRef.current < 5000) return prev;
                         
                         if (JSON.stringify(prev) === JSON.stringify(newTodos)) return prev;
                         return newTodos;
                     });
 
                     // Sync settings only if not recently changed locally
-                    if (Date.now() - lastChangeTime >= 3000) {
+                    if (Date.now() - lastChangeRef.current >= 5000) {
                         if (newSettings.theme && newSettings.theme !== theme) {
-                            setTheme(newSettings.theme);
+                            setRawTheme(newSettings.theme);
                         }
                         if (newSettings.sortOption && newSettings.sortOption !== sortOption) {
                             setSortOption(newSettings.sortOption);
@@ -112,18 +132,21 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
 
         const interval = setInterval(() => loadData(true), 5000);
         return () => clearInterval(interval);
-    }, [user, theme, setTheme, sortOption, lastChangeTime]);
+    }, [user, theme, setRawTheme, sortOption]); // lastChangeRef.current doesn't need to be here as it's a ref
 
-    // Track local changes to prevent polling overwrites
+    // No longer need this effect, we'll mark changes manually for instant protection
+    /*
     useEffect(() => {
         if (isLoaded) {
             setLastChangeTime(Date.now());
         }
     }, [todos, theme, sortOption]);
+    */
 
     // Save data to API whenever tasks or settings change
     useEffect(() => {
-        if (isLoaded) {
+        // Only save if there has been at least one local change
+        if (lastChangeRef.current > 0) {
             const saveData = async () => {
                 try {
                     await fetch(`/api/todos?user=${user}`, {
@@ -142,7 +165,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             const timer = setTimeout(saveData, 500);
             return () => clearTimeout(timer);
         }
-    }, [todos, theme, sortOption, isLoaded, user]);
+    }, [todos, theme, sortOption, user]);
 
     const addTodo = useCallback(() => {
         if (inputValue.trim() === "") return;
@@ -155,15 +178,15 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             comments: [],
             horizon: horizonValue,
         };
-        setTodos((prev) => [newTodo, ...prev]);
+        setTodosWithSync((prev) => [newTodo, ...prev]);
         setInputValue("");
         setDateValue("");
         setPriorityValue(undefined);
         setHorizonValue('short'); // Reset to default
-    }, [inputValue, dateValue, priorityValue, horizonValue]);
+    }, [inputValue, dateValue, priorityValue, horizonValue, markLocalChange]);
 
     const toggleTodo = useCallback((id: string) => {
-        setTodos((prev) =>
+        setTodosWithSync((prev) =>
             prev.map((todo) => {
                 if (todo.id === id) {
                     // Prevent toggling if there are incomplete comments
@@ -176,15 +199,15 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                 return todo;
             })
         );
-    }, []);
+    }, [setTodosWithSync]);
 
     const deleteTodo = useCallback((id: string) => {
-        setTodos((prev) => prev.filter((todo) => todo.id !== id));
+        setTodosWithSync((prev) => prev.filter((todo) => todo.id !== id));
         setExpandedTodoId((prev) => (prev === id ? null : prev));
-    }, []);
+    }, [setTodosWithSync]);
 
     const addComment = useCallback((id: string, commentText: string, date?: string) => {
-        setTodos((prev) =>
+        setTodosWithSync((prev) =>
             prev.map((todo) =>
                 todo.id === id
                     ? {
@@ -197,10 +220,10 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     : todo
             )
         );
-    }, []);
+    }, [setTodosWithSync]);
 
     const toggleComment = useCallback((todoId: string, commentId: string) => {
-        setTodos((prev) =>
+        setTodosWithSync((prev) =>
             prev.map((todo) => {
                 if (todo.id === todoId) {
                     return {
@@ -216,7 +239,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
     }, []);
 
     const deleteComment = useCallback((todoId: string, commentId: string) => {
-        setTodos((prev) =>
+        setTodosWithSync((prev) =>
             prev.map((todo) => {
                 if (todo.id === todoId) {
                     return {
@@ -234,7 +257,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
     }, []);
 
     const saveEditComment = useCallback((todoId: string, index: number, text: string) => {
-        setTodos((prev) => prev.map(todo => {
+        setTodosWithSync((prev) => prev.map(todo => {
             if (todo.id === todoId) {
                 const newComments = [...(todo.comments || [])];
                 // Handle both new Comment objects and legacy strings just in case, though migration should handle it
@@ -268,12 +291,12 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
     }, []);
 
     const moveToHorizon = useCallback((id: string, horizon: 'short' | 'long') => {
-        setTodos((prev) =>
+        setTodosWithSync((prev) =>
             prev.map((todo) =>
                 todo.id === id ? { ...todo, horizon } : todo
             )
         );
-    }, []);
+    }, [setTodosWithSync]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
