@@ -131,8 +131,8 @@ const TodoItem = memo(function TodoItem({
                     : "bg-white border-neutral-100 hover:border-neutral-200 shadow-sm dark:bg-neutral-900 dark:border-neutral-800 dark:hover:border-neutral-700"
             )}
         >
-            <div className="flex items-center gap-3 p-3">
-                <div title={isMainCheckboxDisabled ? "Validez toutes les sous-tâches d'abord" : undefined}>
+            <div className="flex items-start sm:items-center gap-3 p-3">
+                <div className="mt-0.5 sm:mt-0" title={isMainCheckboxDisabled ? "Validez toutes les sous-tâches d'abord" : undefined}>
                     <Checkbox
                         checked={todo.completed}
                         onCheckedChange={() => !isMainCheckboxDisabled && toggleTodo(todo.id)}
@@ -146,8 +146,8 @@ const TodoItem = memo(function TodoItem({
                 </div>
 
                 <div className="flex-1 flex flex-col min-w-0">
-                    <div className="flex items-center gap-2">
-                        <div className="relative">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <div className="relative max-w-full">
                             <span
                                 className={cn(
                                     "text-sm font-medium transition-all break-words relative z-10",
@@ -184,17 +184,17 @@ const TodoItem = memo(function TodoItem({
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                         {todo.date && (
-                            <div className="flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-700">
-                                <Calendar className="h-3 w-3" />
-                                <span>{new Date(todo.date).toLocaleDateString("fr-FR")}</span>
+                            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
+                                <Calendar className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{new Date(todo.date).toLocaleDateString("fr-FR")}</span>
                             </div>
                         )}
                         {totalComments > 0 && (
-                            <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-700">
-                                <ListTodo className="h-3 w-3 text-neutral-400" />
-                                <div className="w-12 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                            <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
+                                <ListTodo className="h-3 w-3 shrink-0 text-neutral-400" />
+                                <div className="w-10 sm:w-12 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shrink-0">
                                     <motion.div 
                                         className="h-full bg-blue-500 rounded-full" 
                                         initial={{ width: 0 }}
@@ -202,13 +202,13 @@ const TodoItem = memo(function TodoItem({
                                         transition={{ duration: 0.5, ease: "easeInOut" }}
                                     />
                                 </div>
-                                <span className="text-[10px] font-medium">{completedComments}/{totalComments}</span>
+                                <span className="font-medium shrink-0">{completedComments}/{totalComments}</span>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="flex gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 -mr-1">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

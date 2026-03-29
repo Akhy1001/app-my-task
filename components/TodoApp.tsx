@@ -561,11 +561,11 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0 overflow-hidden">
+                <div className="flex flex-col md:grid md:grid-cols-2 gap-6 flex-1 min-h-0 overflow-y-auto md:overflow-hidden md:pr-1 pb-4 md:pb-0">
                     {/* Short Term Column */}
-                    <div className="flex flex-col gap-2 h-full overflow-hidden">
+                    <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
                         <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 shrink-0">Court Terme</h3>
-                        <div className="overflow-y-auto flex-1 pr-2 space-y-2 pb-2">
+                        <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
                             <AnimatePresence initial={false} mode="popLayout">
                                 {shortTermTodos.length === 0 ? (
                                     <motion.div
@@ -601,9 +601,9 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     </div>
 
                     {/* Long Term Column */}
-                    <div className="flex flex-col gap-2 h-full overflow-hidden">
-                        <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 text-right md:text-left shrink-0">Long Terme</h3>
-                        <div className="overflow-y-auto flex-1 pr-2 space-y-2 pb-2">
+                    <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
+                        <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 text-left shrink-0">Long Terme</h3>
+                        <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
                             <AnimatePresence initial={false} mode="popLayout">
                                 {longTermTodos.length === 0 ? (
                                     <motion.div
