@@ -37,7 +37,7 @@ Bienvenue sur **My Task**, une application de gestion de tâches simple, éléga
 - **Tri par défaut** : Revenez à l'ordre d'ajout initial quand vous le souhaitez.
 
 ### Sauvegarde Automatique
-- **Persistance des données** : Vos tâches sont automatiquement sauvegardées dans votre navigateur. Vous ne perdrez jamais votre travail, même après avoir rafraîchi la page !
+- **Persistance des données** : Vos tâches sont automatiquement sauvegardées dans Supabase (Database). Vous ne perdrez jamais votre travail, même après avoir rafraîchi la page !
 
 ### Design Premium
 - **Interface soignée** : Profitez d'une expérience utilisateur fluide avec un design minimaliste et moderne.
