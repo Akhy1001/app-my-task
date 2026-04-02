@@ -344,8 +344,8 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             <AnimatePresence>
                 {showSplash && <SplashScreen />}
             </AnimatePresence>
-            <div className="w-[98%] mx-auto bg-white dark:bg-neutral-900 rounded-2xl shadow-xl overflow-hidden border border-neutral-100 dark:border-neutral-800 transition-all duration-300 h-[85vh] flex flex-col my-4">
-                <div className="p-6 bg-white dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
+            <div className={cn("w-[98%] mx-auto rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 h-[85vh] flex flex-col my-4", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900" : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800")}>
+                <div className={cn("p-6 border-b shrink-0", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900" : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800")}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Task</h1>
@@ -353,7 +353,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                             "text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ml-2 border",
                             user === 'anas' 
                                 ? "bg-blue-50 text-blue-500 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800" 
-                                : "bg-rose-50 text-rose-500 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800"
+                                : "bg-pink-50 text-pink-500 border-pink-100 dark:bg-pink-900/20 dark:border-pink-800"
                         )}>
                             {user}
                         </span>
@@ -381,7 +381,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                 <button
                                     className={cn(
                                         "p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors",
-                                        sortOption !== "default" ? "text-blue-500" : "text-neutral-600 dark:text-neutral-400"
+                                        sortOption !== "default" ? (user === 'rose' ? "text-pink-500" : "text-blue-500") : "text-neutral-600 dark:text-neutral-400"
                                     )}
                                 >
                                     <ArrowUpDown animateOnHover size={20} />
@@ -393,7 +393,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         onClick={() => setSortOption("default")}
                                         className={cn(
                                             "text-sm text-left px-3 py-2 rounded-md transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800",
-                                            sortOption === "default" && "bg-neutral-100 dark:bg-neutral-800 font-medium"
+                                            sortOption === "default" && (user === 'rose' ? "bg-pink-50 text-pink-600 font-medium" : "bg-neutral-100 dark:bg-neutral-800 font-medium")
                                         )}
                                     >
                                         Par défaut
@@ -402,7 +402,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         onClick={() => setSortOption("priority")}
                                         className={cn(
                                             "text-sm text-left px-3 py-2 rounded-md transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800",
-                                            sortOption === "priority" && "bg-neutral-100 dark:bg-neutral-800 font-medium"
+                                            sortOption === "priority" && (user === 'rose' ? "bg-pink-50 text-pink-600 font-medium" : "bg-neutral-100 dark:bg-neutral-800 font-medium")
                                         )}
                                     >
                                         Par priorité
@@ -410,8 +410,10 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                     <button
                                         onClick={() => setSortOption("date")}
                                         className={cn(
-                                            "text-sm text-left px-3 py-2 rounded-md transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800",
-                                            sortOption === "date" && "bg-neutral-100 dark:bg-neutral-800 font-medium"
+                                            "text-sm text-left px-3 py-2 rounded-md transition-colors",
+                                            sortOption === "date" 
+                                                ? (user === 'rose' ? "bg-pink-50 text-pink-600 font-medium" : "bg-neutral-100 dark:bg-neutral-800 font-medium")
+                                                : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                                         )}
                                     >
                                         Par date
@@ -428,12 +430,12 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     </div>
                 </div>
 
-                <Progress value={completedCount} max={todos.length} className="mb-4">
+                <Progress value={completedCount} max={todos.length} indicatorColor={user === 'rose' ? "bg-pink-400" : "bg-green-500"} className="mb-4">
                     <ProgressLabel>
                         <span>Progression</span>
                         <span className="text-neutral-500 text-xs">{Math.round(progress)}%</span>
                     </ProgressLabel>
-                    <ProgressTrack />
+                    <ProgressTrack className={user === 'rose' ? "bg-white border border-pink-100 shadow-sm dark:bg-[#1A1214] dark:border-pink-900" : "bg-neutral-100 dark:bg-neutral-800"} />
                 </Progress>
 
                 <p className="text-neutral-500 dark:text-neutral-400 text-sm">Restez organisé et productif.</p>
@@ -448,10 +450,10 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                         >
                             <Input
                                 type="text"
-                                placeholder="Rechercher des tâches..."
+                                placeholder="Rechercher une tâche..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-neutral-50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-900 transition-colors"
+                                className={cn("w-full transition-colors", user === 'rose' ? "border-pink-200 focus-visible:ring-pink-300" : "bg-neutral-50 dark:bg-neutral-800/50 border-transparent focus:bg-white dark:focus:bg-neutral-900")}
                             />
                         </motion.div>
                     )}
@@ -463,18 +465,25 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     <div className="flex gap-2">
                         <Input
                             type="text"
-                            placeholder="Ajouter une nouvelle tâche..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="Ajouter une nouvelle tâche..."
                             onKeyDown={handleKeyDown}
-                            className="flex-1"
+                            className={cn("flex-1 bg-white", user === 'rose' && "border-pink-200 focus-visible:ring-pink-300")}
                         />
-                        <Button onClick={addTodo} size="icon">
+                        <Button onClick={addTodo} size="icon" className={user === 'rose' ? "bg-white text-neutral-900 hover:bg-neutral-50 border border-pink-200 shadow-sm dark:bg-[#2A1D1F] dark:text-white dark:border-pink-900" : ""}>
                             <Plus animateOnHover size={20} />
                         </Button>
                         <Popover>
                             <PopoverTrigger asChild>
-                                <Button variant="outline" size="icon" className={cn("transition-colors", dateValue ? "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800" : "text-neutral-400")}>
+                                <Button 
+                                    variant="outline" 
+                                    size="icon" 
+                                    className={cn(
+                                        "transition-colors", 
+                                        dateValue ? (user === 'rose' ? "text-pink-500 border-pink-200 bg-pink-50" : "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800") : "text-neutral-400"
+                                    )}
+                                >
                                     <Calendar animateOnHover size={20} />
                                 </Button>
                             </PopoverTrigger>
@@ -511,7 +520,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         >
                                             <Flag size={14} className={cn(PRIORITY_COLORS[p], "fill-current")} />
                                             <span>{PRIORITY_LABELS[p]}</span>
-                                            {priorityValue === p && <Check size={14} className="ml-auto text-neutral-400" />}
+                                            {priorityValue === p && <Check size={14} className={cn("ml-auto", user === 'rose' ? "text-pink-500" : "text-neutral-400")} />}
                                         </button>
                                     ))}
                                     {priorityValue && (
@@ -572,7 +581,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-neutral-100 dark:border-neutral-800 rounded-xl"
+                                        className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
                                     >
                                         <p className="text-neutral-400 dark:text-neutral-500 text-sm">Rien à l&apos;horizon</p>
                                     </motion.div>
@@ -581,6 +590,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         <TodoItem
                                             key={todo.id}
                                             todo={todo}
+                                            user={user}
                                             toggleTodo={toggleTodo}
                                             deleteTodo={deleteTodo}
                                             addComment={addComment}
@@ -610,7 +620,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-neutral-100 dark:border-neutral-800 rounded-xl"
+                                        className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
                                     >
                                         <p className="text-neutral-400 dark:text-neutral-500 text-sm">Tranquille pour le moment</p>
                                     </motion.div>
@@ -619,6 +629,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                                         <TodoItem
                                             key={todo.id}
                                             todo={todo}
+                                            user={user}
                                             toggleTodo={toggleTodo}
                                             deleteTodo={deleteTodo}
                                             addComment={addComment}
@@ -640,7 +651,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                 </div>
             </div>
 
-            <div className="p-4 bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-neutral-800 flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400">
+            <div className={cn("p-4 border-t flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900/50" : "bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800")}>
                 <span>{todos.filter(t => !t.completed).length} tâches restantes</span>
                 <div className="flex gap-2">
                     {todos.some(t => t.completed) && (

@@ -48,6 +48,7 @@ interface TodoItemProps {
     saveEditComment: (todoId: string, index: number, text: string) => void;
     cancelEditComment: () => void;
     onMoveToHorizon: (id: string, horizon: 'short' | 'long') => void;
+    user: 'anas' | 'rose';
 }
 
 const PRIORITY_COLORS = {
@@ -86,6 +87,7 @@ const TodoItem = memo(function TodoItem({
     saveEditComment,
     cancelEditComment,
     onMoveToHorizon,
+    user,
 }: TodoItemProps) {
     const [localCommentInput, setLocalCommentInput] = useState("");
     const [localCommentDate, setLocalCommentDate] = useState("");
@@ -127,8 +129,8 @@ const TodoItem = memo(function TodoItem({
             className={cn(
                 "group flex flex-col rounded-xl border transition-colors duration-200 overflow-hidden",
                 todo.completed
-                    ? "bg-neutral-50 border-transparent dark:bg-neutral-800/50"
-                    : "bg-white border-neutral-100 hover:border-neutral-200 shadow-sm dark:bg-neutral-900 dark:border-neutral-800 dark:hover:border-neutral-700"
+                    ? "bg-neutral-50/50 border-transparent dark:bg-neutral-800/50"
+                    : cn("bg-white dark:bg-neutral-900 border transition-colors shadow-sm", user === 'rose' ? "border-pink-100 hover:border-pink-300 dark:border-pink-900" : "border-neutral-100 hover:border-neutral-200 dark:border-neutral-800 dark:hover:border-neutral-700")
             )}
         >
             <div className="flex items-start sm:items-center gap-3 p-3">
@@ -138,8 +140,13 @@ const TodoItem = memo(function TodoItem({
                         onCheckedChange={() => !isMainCheckboxDisabled && toggleTodo(todo.id)}
                         disabled={isMainCheckboxDisabled}
                         className={cn(
-                            "transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
-                            todo.completed ? "!border-green-500" : "border-neutral-300 dark:border-neutral-600",
+                            "transition-colors",
+                            user === 'rose' 
+                                ? "data-[state=checked]:!bg-pink-400 data-[state=checked]:!border-pink-400" 
+                                : "data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
+                            todo.completed 
+                                ? (user === 'rose' ? "!border-pink-400" : "!border-green-500") 
+                                : "border-neutral-300 dark:border-neutral-600",
                             isMainCheckboxDisabled && "opacity-50 cursor-not-allowed"
                         )}
                     />
@@ -194,9 +201,9 @@ const TodoItem = memo(function TodoItem({
                         {totalComments > 0 && (
                             <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/50 px-2 py-1 rounded-md border border-neutral-200 dark:border-neutral-700">
                                 <ListTodo className="h-3 w-3 shrink-0 text-neutral-400" />
-                                <div className="w-10 sm:w-12 h-1.5 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden shrink-0">
+                                <div className={cn("w-10 sm:w-12 h-1.5 rounded-full overflow-hidden shrink-0", user === 'rose' ? "bg-white border border-pink-100 dark:bg-black dark:border-pink-900 shadow-sm" : "bg-neutral-200 dark:bg-neutral-700")}>
                                     <motion.div 
-                                        className="h-full bg-blue-500 rounded-full" 
+                                        className={cn("h-full rounded-full", user === 'rose' ? "bg-pink-400" : "bg-blue-500")} 
                                         initial={{ width: 0 }}
                                         animate={{ width: `${progressPercentage}%` }}
                                         transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -267,14 +274,19 @@ const TodoItem = memo(function TodoItem({
                                                 animate={{ opacity: 1, height: "auto", scale: 1 }}
                                                 exit={{ opacity: 0, height: 0, scale: 0.95 }}
                                                 transition={{ duration: 0.2 }}
-                                                className="text-sm text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 p-2 rounded-lg border border-neutral-100 dark:border-neutral-800 shadow-sm group/comment flex items-start gap-3 overflow-hidden"
+                                                className={cn("text-sm p-2 rounded-lg border shadow-sm group/comment flex items-start gap-3 overflow-hidden bg-white dark:bg-neutral-900", user === 'rose' ? "border-pink-100 dark:border-pink-900" : "border-neutral-100 dark:border-neutral-800")}
                                             >
                                                 <Checkbox
                                                     checked={comment.isCompleted}
                                                 onCheckedChange={() => toggleComment(todo.id, comment.id)}
                                                 className={cn(
-                                                    "mt-0.5 transition-colors data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
-                                                    comment.isCompleted ? "!border-green-500" : "border-neutral-300 dark:border-neutral-600"
+                                                    "mt-0.5 transition-colors",
+                                                    user === 'rose' 
+                                                        ? "data-[state=checked]:!bg-pink-400 data-[state=checked]:!border-pink-400" 
+                                                        : "data-[state=checked]:!bg-green-500 data-[state=checked]:!border-green-500",
+                                                    comment.isCompleted 
+                                                        ? (user === 'rose' ? "!border-pink-400" : "!border-green-500") 
+                                                        : "border-neutral-300 dark:border-neutral-600"
                                                 )}
                                             />
                                             {editingComment?.todoId === todo.id && editingComment?.index === index ? (
@@ -362,7 +374,7 @@ const TodoItem = memo(function TodoItem({
                                 />
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <Button variant="outline" size="icon" className={cn("h-9 w-9 shrink-0 transition-colors", localCommentDate ? "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800" : "text-neutral-400")}>
+                                        <Button variant="outline" size="icon" className={cn("h-9 w-9 shrink-0 transition-colors", localCommentDate ? (user === 'rose' ? "text-pink-400 border-pink-200 bg-pink-50 dark:bg-pink-900/20 dark:border-pink-800" : "text-blue-500 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800") : "text-neutral-400")}>
                                             <Calendar animateOnHover className="h-4 w-4" />
                                         </Button>
                                     </PopoverTrigger>
@@ -384,7 +396,11 @@ const TodoItem = memo(function TodoItem({
                                         </div>
                                     </PopoverContent>
                                 </Popover>
-                                <Button onClick={handleAddComment} size="icon" className="h-9 w-9 shrink-0">
+                                <Button 
+                                    onClick={handleAddComment} 
+                                    size="icon" 
+                                    className={cn("h-9 w-9 shrink-0", user === 'rose' ? "bg-white text-neutral-900 hover:bg-neutral-50 border border-pink-200 shadow-sm dark:bg-[#2A1D1F] dark:text-white dark:border-pink-900" : "")}
+                                >
                                     <Send animateOnHover className="h-4 w-4" />
                                 </Button>
                             </div>

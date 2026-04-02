@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 interface ProgressContextValue {
     value: number;
     max: number;
+    indicatorColor?: string;
 }
 
 const ProgressContext = React.createContext<ProgressContextValue | null>(null);
@@ -22,12 +23,13 @@ function useProgressContext() {
 type ProgressProps = React.HTMLAttributes<HTMLDivElement> & {
     value?: number;
     max?: number;
+    indicatorColor?: string;
 }
 
 const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
-    ({ className, value = 0, max = 100, children, ...props }, ref) => {
+    ({ className, value = 0, max = 100, indicatorColor, children, ...props }, ref) => {
         return (
-            <ProgressContext.Provider value={{ value, max }}>
+            <ProgressContext.Provider value={{ value, max, indicatorColor }}>
                 <div
                     ref={ref}
                     className={cn("w-full flex flex-col gap-2", className)}
@@ -66,7 +68,7 @@ const ProgressTrack = React.forwardRef<HTMLDivElement, ProgressTrackProps>(
             <div
                 ref={ref}
                 className={cn(
-                    "relative h-2 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800",
+                    "relative h-2 w-full overflow-hidden rounded-full transition-colors",
                     className
                 )}
                 {...props}
@@ -83,13 +85,13 @@ type ProgressValueProps = React.HTMLAttributes<HTMLDivElement>;
 
 const ProgressValue = React.forwardRef<HTMLDivElement, ProgressValueProps>(
     ({ className, ...props }, ref) => {
-        const { value, max } = useProgressContext();
+        const { value, max, indicatorColor } = useProgressContext();
         const percentage = max > 0 ? Math.min(Math.max(0, (value / max) * 100), 100) : 0;
 
         return (
             <motion.div
                 ref={ref}
-                className={cn("h-full w-full flex-1 bg-green-500 transition-all", className)}
+                className={cn("h-full w-full flex-1 transition-all", indicatorColor || "bg-green-500", className)}
                 initial={{ width: 0 }}
                 animate={{ width: `${percentage}%` }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
