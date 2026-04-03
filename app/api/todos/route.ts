@@ -34,8 +34,11 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ todos, settings });
     } catch (error) {
+        // IMPORTANT: return 503, NOT 200 with empty data.
+        // If we return 200 + { todos:[] }, the client will think the user has no todos
+        // and wipe everything from the screen.
         console.error('Error reading from Supabase:', error);
-        return NextResponse.json({ todos: [], settings: {} }, { status: 200 });
+        return NextResponse.json({ error: 'Supabase unavailable' }, { status: 503 });
     }
 }
 
@@ -49,6 +52,21 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json();
+
+
+        // Safety guard: never wipe todos if the payload carries an empty array
+        // AND there are already todos in the DB for this user.
+        if (Array.isArray(body.todos) && body.todos.length === 0) {
+            const { count } = await supabase
+                .from('todos')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user);
+
+            if (count && count > 0) {
+                console.warn(`[API /todos POST] BLOCKED empty-array save for ${user} — ${count} todos already in DB.`);
+                return NextResponse.json({ success: true, blocked: true });
+            }
+        }
         
         if (body.settings) {
             const { error: settingsError } = await supabase
@@ -93,3 +111,4 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
     }
 }
+

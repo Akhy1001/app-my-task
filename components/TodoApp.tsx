@@ -11,6 +11,7 @@ import { Plus } from "@/components/animate-ui/icons/plus";
 import { Calendar } from "@/components/animate-ui/icons/calendar";
 import { Search } from "@/components/animate-ui/icons/search";
 import { ArrowUpDown } from "@/components/animate-ui/icons/arrow-up-down";
+import { BarChart2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -18,6 +19,7 @@ import { Progress, ProgressLabel, ProgressTrack } from "@/components/ui/progress
 import { cn } from "@/lib/utils";
 import TodoItem, { Todo } from "./TodoItem";
 import SplashScreen from "./SplashScreen";
+import TrackerScore from "./TrackerScore";
 
 type Priority = "low" | "medium" | "high";
 type SortOption = "default" | "date" | "priority";
@@ -48,6 +50,8 @@ interface TodoAppProps {
 export default function TodoApp({ user, onLogout }: TodoAppProps) {
     const [todos, setTodos] = useState<Todo[]>([]);
     const lastChangeRef = useRef(0);
+    const isSavingRef = useRef(false); // Prevents concurrent saves
+    const hasSavedOnceRef = useRef(false); // True once a real save has been done
 
     const markLocalChange = useCallback(() => {
         lastChangeRef.current = Date.now();
@@ -80,95 +84,143 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
 
     const [expandedTodoId, setExpandedTodoId] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const isLoadedRef = useRef(false); // Ref copy so autosave can read it without being in deps
     const [showSplash, setShowSplash] = useState(true);
+    const [currentView, setCurrentView] = useState<'tasks' | 'tracker'>('tasks');
 
     const [editingComment, setEditingComment] = useState<{ todoId: string; index: number } | null>(null);
-
-    // Load data from API on mount and poll for changes
+    
+    // Reset state on user switch to prevent cross-account data leaks
     useEffect(() => {
-        const loadData = async (silent = false) => {
-            // If we have unsaved local changes (within the last 5 seconds), skip polling update
-            if (silent && Date.now() - lastChangeRef.current < 5000) {
-                return;
-            }
+        setTodos([]);
+        setIsLoaded(false);
+        isLoadedRef.current = false;
+        lastChangeRef.current = 0;
+        hasSavedOnceRef.current = false;
+        isSavingRef.current = false;
+    }, [user]);
 
+    // Load data from Supabase on mount, then poll every 5s
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadData = async (silent = false) => {
+            // Skip polling if there's a recent local change (user is actively editing)
+            if (silent && Date.now() - lastChangeRef.current < 5000) return;
+
+            let success = false;
             try {
                 const response = await fetch(`/api/todos?user=${user}&t=${Date.now()}`, {
                     cache: 'no-store',
                     headers: { 'Cache-Control': 'no-cache' }
                 });
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    const newTodos = Array.isArray(data) ? data : (data.todos || []);
-                    const newSettings = Array.isArray(data) ? {} : (data.settings || {});
 
-                    setTodos(prev => {
-                        // Crucial check: if we just changed something locally, don't overwrite
-                        if (Date.now() - lastChangeRef.current < 5000) return prev;
-                        
-                        if (JSON.stringify(prev) === JSON.stringify(newTodos)) return prev;
-                        return newTodos;
-                    });
-
-                    // Sync settings only if not recently changed locally
-                    if (Date.now() - lastChangeRef.current >= 5000) {
-                        if (newSettings.theme && newSettings.theme !== theme) {
-                            setRawTheme(newSettings.theme);
-                        }
-                        if (newSettings.sortOption && newSettings.sortOption !== sortOption) {
-                            setSortOption(newSettings.sortOption);
-                        }
-                    }
+                // If Supabase is down (503) or any error — do NOT touch todos, just bail
+                if (!response.ok) {
+                    console.warn(`[TodoApp] Load skipped — API returned ${response.status}`);
+                    return;
                 }
+                if (cancelled) return;
+
+                const data = await response.json();
+                const newTodos: Todo[] = Array.isArray(data) ? data : (data.todos || []);
+                const newSettings = Array.isArray(data) ? {} : (data.settings || {});
+
+                if (cancelled) return;
+
+                // Skip overwriting if there's a recent local change
+                if (Date.now() - lastChangeRef.current < 5000) {
+                    success = true; // Still counts as a successful load for the finally block
+                    return;
+                }
+
+                setTodos(prev => {
+                    if (JSON.stringify(prev) === JSON.stringify(newTodos)) return prev;
+                    return newTodos;
+                });
+
+                if (newSettings.theme) setRawTheme(newSettings.theme);
+                if (newSettings.sortOption) setSortOptionRaw(newSettings.sortOption);
+
+                success = true;
+
             } catch (error) {
-                console.error("Failed to fetch data:", error);
+                console.warn('[TodoApp] Load failed (network error):', error);
             } finally {
-                if (!silent) {
+                // Only mark as loaded after a REAL successful response.
+                // If Supabase timed out, we keep retrying — don't show empty UI.
+                if (!silent && !cancelled && success) {
+                    isLoadedRef.current = true;
                     setIsLoaded(true);
-                    const timer = setTimeout(() => setShowSplash(false), 2000);
+                    setTimeout(() => { if (!cancelled) setShowSplash(false); }, 2000);
                 }
             }
         };
-        
-        loadData();
 
-        const interval = setInterval(() => loadData(true), 5000);
-        return () => clearInterval(interval);
-    }, [user, theme, setRawTheme, sortOption]); // lastChangeRef.current doesn't need to be here as it's a ref
+        loadData(false);
+        // Retry every 2s if not yet loaded, otherwise poll every 5s
+        const interval = setInterval(() => {
+            if (!isLoadedRef.current) {
+                loadData(false); // Keep retrying initial load
+            } else {
+                loadData(true);  // Normal polling
+            }
+        }, 2000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [user]);
 
-    // No longer need this effect, we'll mark changes manually for instant protection
-    /*
+
+    // Save data — only triggered when lastChangeRef is set (i.e. by real user actions)
     useEffect(() => {
-        if (isLoaded) {
-            setLastChangeTime(Date.now());
+        // NEVER save if: not loaded, no user action happened, or in initial zero-state
+        if (!isLoadedRef.current) return;
+        if (lastChangeRef.current === 0) return;
+        // CRITICAL: never save an empty todos list unless user has already done at least one successful save
+        // This prevents mounting race conditions from wiping Supabase data
+        if (todos.length === 0 && !hasSavedOnceRef.current) {
+            console.warn('[TodoApp] Blocked save of empty todos — hasSavedOnce is false, skipping.');
+            return;
         }
-    }, [todos, theme, sortOption]);
-    */
 
-    // Save data to API whenever tasks or settings change
-    useEffect(() => {
-        // Only save if there has been at least one local change
-        if (lastChangeRef.current > 0) {
-            const saveData = async () => {
-                try {
-                    await fetch(`/api/todos?user=${user}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            todos, 
-                            settings: { theme, sortOption } 
-                        }),
-                    });
-                } catch (error) {
-                    console.error("Failed to save data:", error);
+        const capturedTodos = todos; // Already a stable React state snapshot
+        const capturedUser = user;
+        const capturedTheme = theme;
+        const capturedSort = sortOption;
+
+        const saveData = async () => {
+            if (capturedUser !== user) return; // User switched during debounce
+            if (!isLoadedRef.current) return;
+            if (isSavingRef.current) return;
+
+            isSavingRef.current = true;
+            try {
+                const res = await fetch(`/api/todos?user=${capturedUser}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ todos: capturedTodos, settings: { theme: capturedTheme, sortOption: capturedSort } }),
+                });
+                if (res.ok) {
+                    hasSavedOnceRef.current = true;
+                } else {
+                    // Use warn (not error) to avoid the browser red overlay
+                    const text = await res.text().catch(() => 'unknown');
+                    console.warn('[TodoApp] Save failed (will retry on next change):', text);
                 }
-            };
+            } catch (error) {
+                // Network issues (e.g. Supabase timeout) — warn only, no error overlay
+                console.warn('[TodoApp] Save network error (will retry on next change):', error);
+            } finally {
+                isSavingRef.current = false;
+            }
+        };
 
-            const timer = setTimeout(saveData, 500);
-            return () => clearTimeout(timer);
-        }
+        const timer = setTimeout(saveData, 800);
+        return () => clearTimeout(timer);
     }, [todos, theme, sortOption, user]);
+
 
     const addTodo = useCallback(() => {
         if (inputValue.trim() === "") return;
@@ -344,7 +396,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             <AnimatePresence>
                 {showSplash && <SplashScreen />}
             </AnimatePresence>
-            <div className={cn("w-[98%] mx-auto rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 h-[85vh] flex flex-col my-4", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900" : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800")}>
+            <div className={cn("w-[96%] mx-auto rounded-2xl shadow-xl overflow-hidden border transition-all duration-300 h-[90vh] flex flex-col my-[5vh]", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900" : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800")}>
                 <div className={cn("p-6 border-b shrink-0", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900" : "bg-white dark:bg-neutral-900 border-neutral-100 dark:border-neutral-800")}>
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -423,25 +475,30 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                         </Popover>
                         <button
                             onClick={() => setIsSearchVisible(!isSearchVisible)}
-                            className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors"
+                            className={cn("p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors", isSearchVisible ? (user === 'rose' ? "text-pink-500 bg-pink-50 dark:bg-pink-900/20" : "text-blue-500 bg-blue-50 dark:bg-blue-900/20") : "text-neutral-600 dark:text-neutral-400")}
                         >
                             <Search animateOnHover size={20} />
+                        </button>
+                        <button
+                            onClick={() => setCurrentView(prev => prev === 'tasks' ? 'tracker' : 'tasks')}
+                            className={cn(
+                                "p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors",
+                                currentView === 'tracker' ? (user === 'rose' ? "text-pink-500 bg-pink-50 dark:bg-pink-900/20" : "text-blue-500 bg-blue-50 dark:bg-blue-900/20") : "text-neutral-600 dark:text-neutral-400"
+                            )}
+                        >
+                            <BarChart2 size={20} />
                         </button>
                     </div>
                 </div>
 
-                <Progress value={completedCount} max={todos.length} indicatorColor={user === 'rose' ? "bg-pink-400" : "bg-green-500"} className="mb-4">
-                    <ProgressLabel>
-                        <span>Progression</span>
-                        <span className="text-neutral-500 text-xs">{Math.round(progress)}%</span>
-                    </ProgressLabel>
-                    <ProgressTrack className={user === 'rose' ? "bg-white border border-pink-100 shadow-sm dark:bg-[#1A1214] dark:border-pink-900" : "bg-neutral-100 dark:bg-neutral-800"} />
-                </Progress>
 
-                <p className="text-neutral-500 dark:text-neutral-400 text-sm">Restez organisé et productif.</p>
+
+                <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+                    {currentView === 'tracker' ? "Vos statistiques de productivité" : "Restez organisé et productif."}
+                </p>
 
                 <AnimatePresence>
-                    {isSearchVisible && (
+                    {isSearchVisible && currentView === 'tasks' && (
                         <motion.div
                             initial={{ height: 0, opacity: 0, marginTop: 0 }}
                             animate={{ height: "auto", opacity: 1, marginTop: 16 }}
@@ -461,8 +518,15 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             </div>
 
             <div className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
-                <div className="flex flex-col gap-2 shrink-0">
-                    <div className="flex gap-2">
+                <AnimatePresence>
+                    {currentView === 'tasks' && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="flex flex-col gap-2 shrink-0 overflow-hidden"
+                        >
+                            <div className="flex gap-2">
                         <Input
                             type="text"
                             value={inputValue}
@@ -568,86 +632,100 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                             </PopoverContent>
                         </Popover>
                     </div>
-                </div>
+                </motion.div>
+                )}
+                </AnimatePresence>
 
-                <div className="flex flex-col md:grid md:grid-cols-2 gap-6 flex-1 min-h-0 overflow-y-auto md:overflow-hidden md:pr-1 pb-4 md:pb-0">
-                    {/* Short Term Column */}
-                    <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
-                        <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 shrink-0">Court Terme</h3>
-                        <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
-                            <AnimatePresence initial={false} mode="popLayout">
-                                {shortTermTodos.length === 0 ? (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
-                                    >
-                                        <p className="text-neutral-400 dark:text-neutral-500 text-sm">Rien à l&apos;horizon</p>
-                                    </motion.div>
-                                ) : (
-                                    shortTermTodos.map((todo) => (
-                                        <TodoItem
-                                            key={todo.id}
-                                            todo={todo}
-                                            user={user}
-                                            toggleTodo={toggleTodo}
-                                            deleteTodo={deleteTodo}
-                                            addComment={addComment}
-                                            toggleComments={toggleComments}
-                                            toggleComment={toggleComment}
-                                            deleteComment={deleteComment}
-                                            isExpanded={expandedTodoId === todo.id}
-                                            editingComment={editingComment}
-                                            startEditingComment={startEditingComment}
-                                            saveEditComment={saveEditComment}
-                                            cancelEditComment={cancelEditComment}
-                                            onMoveToHorizon={moveToHorizon}
-                                        />
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
+                <div className={cn(
+                    "flex-1 min-h-0 overflow-y-auto md:pr-1 pb-4 md:pb-0",
+                    currentView === 'tasks' ? "flex flex-col md:grid md:grid-cols-2 gap-6" : "flex flex-col"
+                )}>
+                    <AnimatePresence mode="wait">
+                        {currentView === 'tasks' && (
+                            <>
+                                {/* Short Term Column */}
+                                <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
+                                    <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 shrink-0">Court Terme</h3>
+                                    <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
+                                        <AnimatePresence initial={false} mode="popLayout">
+                                            {shortTermTodos.length === 0 ? (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
+                                                >
+                                                    <p className="text-neutral-400 dark:text-neutral-500 text-sm">Rien à l&apos;horizon</p>
+                                                </motion.div>
+                                            ) : (
+                                                shortTermTodos.map((todo) => (
+                                                    <TodoItem
+                                                        key={todo.id}
+                                                        todo={todo}
+                                                        user={user}
+                                                        toggleTodo={toggleTodo}
+                                                        deleteTodo={deleteTodo}
+                                                        addComment={addComment}
+                                                        toggleComments={toggleComments}
+                                                        toggleComment={toggleComment}
+                                                        deleteComment={deleteComment}
+                                                        isExpanded={expandedTodoId === todo.id}
+                                                        editingComment={editingComment}
+                                                        startEditingComment={startEditingComment}
+                                                        saveEditComment={saveEditComment}
+                                                        cancelEditComment={cancelEditComment}
+                                                        onMoveToHorizon={moveToHorizon}
+                                                    />
+                                                ))
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
 
-                    {/* Long Term Column */}
-                    <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
-                        <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 text-left shrink-0">Long Terme</h3>
-                        <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
-                            <AnimatePresence initial={false} mode="popLayout">
-                                {longTermTodos.length === 0 ? (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.95 }}
-                                        className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
-                                    >
-                                        <p className="text-neutral-400 dark:text-neutral-500 text-sm">Tranquille pour le moment</p>
-                                    </motion.div>
-                                ) : (
-                                    longTermTodos.map((todo) => (
-                                        <TodoItem
-                                            key={todo.id}
-                                            todo={todo}
-                                            user={user}
-                                            toggleTodo={toggleTodo}
-                                            deleteTodo={deleteTodo}
-                                            addComment={addComment}
-                                            toggleComments={toggleComments}
-                                            toggleComment={toggleComment}
-                                            deleteComment={deleteComment}
-                                            isExpanded={expandedTodoId === todo.id}
-                                            editingComment={editingComment}
-                                            startEditingComment={startEditingComment}
-                                            saveEditComment={saveEditComment}
-                                            cancelEditComment={cancelEditComment}
-                                            onMoveToHorizon={moveToHorizon}
-                                        />
-                                    ))
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
+                                {/* Long Term Column */}
+                                <div className="flex flex-col gap-2 md:h-full md:overflow-hidden shrink-0">
+                                    <h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-2 text-left shrink-0">Long Terme</h3>
+                                    <div className="md:overflow-y-auto flex-1 md:pr-2 space-y-2 pb-2">
+                                        <AnimatePresence initial={false} mode="popLayout">
+                                            {longTermTodos.length === 0 ? (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    className={cn("flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl", user === 'rose' ? "border-pink-200 dark:border-pink-800" : "border-neutral-100 dark:border-neutral-800")}
+                                                >
+                                                    <p className="text-neutral-400 dark:text-neutral-500 text-sm">Tranquille pour le moment</p>
+                                                </motion.div>
+                                            ) : (
+                                                longTermTodos.map((todo) => (
+                                                    <TodoItem
+                                                        key={todo.id}
+                                                        todo={todo}
+                                                        user={user}
+                                                        toggleTodo={toggleTodo}
+                                                        deleteTodo={deleteTodo}
+                                                        addComment={addComment}
+                                                        toggleComments={toggleComments}
+                                                        toggleComment={toggleComment}
+                                                        deleteComment={deleteComment}
+                                                        isExpanded={expandedTodoId === todo.id}
+                                                        editingComment={editingComment}
+                                                        startEditingComment={startEditingComment}
+                                                        saveEditComment={saveEditComment}
+                                                        cancelEditComment={cancelEditComment}
+                                                        onMoveToHorizon={moveToHorizon}
+                                                    />
+                                                ))
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        {currentView === 'tracker' && (
+                            <TrackerScore key="tracker" todos={todos} user={user} />
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
@@ -656,7 +734,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                 <div className="flex gap-2">
                     {todos.some(t => t.completed) && (
                         <button
-                            onClick={() => setTodos(prev => prev.filter(t => !t.completed))}
+                            onClick={() => setTodosWithSync(prev => prev.filter(t => !t.completed))}
                             className="hover:text-neutral-900 dark:hover:text-white transition-colors"
                         >
                             Effacer les terminées
