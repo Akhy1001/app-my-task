@@ -6,6 +6,7 @@ import { CheckCircle2, Target, ListTodo, Flame, PieChart, BarChart2, ChevronLeft
 import { useState } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/animate-ui/components/radix/toggle-group';
 import { Input } from '@/components/ui/Input';
+import ActivityCalendar from './ActivityCalendar';
 
 interface TrackerScoreProps {
     todos: Todo[];
@@ -390,6 +391,11 @@ export default function TrackerScore({ todos, user }: TrackerScoreProps) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Activity Calendar Section */}
+                <div className={cn('rounded-2xl border shadow-sm p-5 mt-2', bgCardClass)}>
+                    <ActivityCalendar todos={todos} user={user} />
+                </div>
 
             </div>
         </motion.div>
