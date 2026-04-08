@@ -7,6 +7,7 @@ create table todos (
   date text,
   priority text,
   horizon text default 'short',
+  archived boolean default false,
   comments jsonb default '[]'::jsonb
 );
 

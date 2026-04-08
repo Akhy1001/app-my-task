@@ -96,6 +96,7 @@ export async function POST(request: Request) {
                     date: todo.date || null,
                     priority: todo.priority || null,
                     horizon: todo.horizon || 'short',
+                    archived: todo.archived || false,
                     comments: todo.comments || []
                 }));
                 const { error: insertError } = await supabase

@@ -32,6 +32,7 @@ export interface Todo {
     comments?: Comment[];
     priority?: Priority;
     horizon: 'short' | 'long';
+    archived?: boolean;
 }
 
 interface TodoItemProps {

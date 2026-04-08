@@ -355,8 +355,8 @@ export default function TrackerScore({ todos, user }: TrackerScoreProps) {
                                             <div
                                                 key={i}
                                                 className="absolute flex flex-col items-center gap-0.5 -translate-x-1/2"
-                                                style={{ left: `${pct}
-                                      %` }}      >
+                                                style={{ left: `${pct}%` }}
+                                            >
                                                 <span className="text-[10px] font-semibold text-neutral-400 uppercase">{d.label}</span>
                                                 <span className="text-[11px] font-bold text-neutral-600 dark:text-neutral-300">{d.dayNumber}</span>
                                             </div>

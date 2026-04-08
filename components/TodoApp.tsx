@@ -249,7 +249,21 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
                     if (hasIncompleteComments && !todo.completed) {
                         return todo;
                     }
-                    return { ...todo, completed: !todo.completed };
+                    
+                    const newCompleted = !todo.completed;
+                    
+                    // Auto-archive after 1.5s if marked as completed
+                    if (newCompleted) {
+                        setTimeout(() => {
+                            setTodosWithSync(current => 
+                                current.map(t => 
+                                    (t.id === id && t.completed) ? { ...t, archived: true } : t
+                                )
+                            );
+                        }, 1500);
+                    }
+                    
+                    return { ...todo, completed: newCompleted };
                 }
                 return todo;
             })
@@ -361,7 +375,7 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
 
     const sortedTodos = useMemo(() => {
         const filtered = todos.filter((todo) =>
-            todo.text.toLowerCase().includes(searchQuery.toLowerCase())
+            !todo.archived && todo.text.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
         return filtered.sort((a, b) => {
@@ -732,9 +746,9 @@ export default function TodoApp({ user, onLogout }: TodoAppProps) {
             <div className={cn("p-4 border-t flex justify-between items-center text-xs text-neutral-500 dark:text-neutral-400", user === 'rose' ? "bg-[#FDF2F5] dark:bg-[#2A1D1F] border-pink-100 dark:border-pink-900/50" : "bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-800")}>
                 <span>{todos.filter(t => !t.completed).length} tâches restantes</span>
                 <div className="flex gap-2">
-                    {todos.some(t => t.completed) && (
+                    {todos.some(t => t.completed && !t.archived) && (
                         <button
-                            onClick={() => setTodosWithSync(prev => prev.filter(t => !t.completed))}
+                            onClick={() => setTodosWithSync(prev => prev.map(t => t.completed ? { ...t, archived: true } : t))}
                             className="hover:text-neutral-900 dark:hover:text-white transition-colors"
                         >
                             Effacer les terminées
